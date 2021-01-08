@@ -75,10 +75,7 @@ def load_data(split=0, normalize=False):
 
 
 # Classifier to be trained on CIFAR-10.
-<<<<<<< HEAD
 # Resnet code found at https://github.com/FrancescoSaverioZuppichini/ResNet 
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
 # Implement RESNET-18
 class Conv2dAuto(nn.Conv2d):
@@ -417,11 +414,7 @@ def to_class_index(target_set, classes, split, splits, batch_size):
     return target_indices
 
 
-<<<<<<< HEAD
 def get_resnet_18_classifier(kn_train=None, kn_val=None, split=0, filename='resnet18_classifier_kn.pth'):
-=======
-def get_resnet_18_classifier(tr=None, val=None, filename='resnet18_classifier_kn.pth'):
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     CIFAR10_DIM = 32*32
     NUM_EPOCHS = 7
     NUM_CHANNELS = 3
@@ -438,11 +431,8 @@ def get_resnet_18_classifier(tr=None, val=None, filename='resnet18_classifier_kn
         [4, 5, 6, 9],
     ]
 
-<<<<<<< HEAD
     SPLIT = split
 
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     #print('Number of target batches: {}'.format(len(tr_target)))
 
     #imshow(kn_train.__getitem__(4))
@@ -457,7 +447,6 @@ def get_resnet_18_classifier(tr=None, val=None, filename='resnet18_classifier_kn
         model.eval()
         
     else:
-<<<<<<< HEAD
         tr_loader = torch.utils.data.DataLoader(kn_train, batch_size=BATCH_SIZE, shuffle=False, \
                                              pin_memory=True, drop_last=True)
         val_loader = torch.utils.data.DataLoader(kn_val, batch_size=BATCH_SIZE, shuffle=False, \
@@ -472,15 +461,6 @@ def get_resnet_18_classifier(tr=None, val=None, filename='resnet18_classifier_kn
         val_target = kn_val.frame['label'].tolist()
         while len(val_target) % BATCH_SIZE != 0:
             val_target.pop()
-=======
-        tr_loader = torch.utils.data.DataLoader(kn_train, batch_size=BATCH_SIZE, \
-                                            shuffle=False, pin_memory=True)
-        val_loader = torch.utils.data.DataLoader(kn_val, batch_size=BATCH_SIZE, shuffle=False, \
-                                             pin_memory=True)
-
-        tr_target = kn_train.frame['label'].tolist()
-        val_target = kn_val.frame['label'].tolist()
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
         tr_target = to_class_index(tr_target, CIFAR_CLASSES, SPLIT, splits, BATCH_SIZE)
         val_target = to_class_index(val_target, CIFAR_CLASSES, SPLIT, splits, BATCH_SIZE)
