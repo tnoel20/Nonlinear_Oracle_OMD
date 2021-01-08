@@ -6,10 +6,7 @@ import torchvision.transforms as T
 import pandas as pd
 import os
 import math
-<<<<<<< HEAD
 from sklearn.linear_model import LogisticRegression
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 from pyod.models.loda import LODA
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score, roc_curve
@@ -91,35 +88,20 @@ def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
                   be a list of unique strings)
     '''
     N = len(latent_data)
-<<<<<<< HEAD
     T = N
     labels = latent_data['label']
     theta, clf = get_weight_prior(train_latent_data)
     data = loda_transform(clf, latent_data)
     #print('Weight Prior: {}'.format(theta))
-=======
-    T = 1000#=N
-    labels = latent_data['label']
-    # TODO: Initialize this with LODA values
-    theta, clf = get_weight_prior(train_latent_data)
-    data = loda_transform(clf, latent_data)
-    print('Weight Prior: {}'.format(theta))
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     # Note that this is usually implemented as an
     # online algorithm so number of time steps (steps
     # of this outer loop) are usually ambiguous. Here
     # we have a dataset of some fixed size, so we
     # will start by running a single epoch over the
     # dataset
-<<<<<<< HEAD
     for i in range(T):
         w = get_nearest_w(theta)
         #w = theta
-=======
-    # TODO: Mess around with reducing this number
-    for i in range(T):
-        w = get_nearest_w(theta)
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
         d_anom, idx = get_max_anomaly_score(w, data)
         y = get_feedback(labels.iloc[idx], anom_classes)
         # TAG
@@ -127,7 +109,6 @@ def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
         np.delete(data, idx)
         # linear loss function
         # loss = -y*np.dot(w,d_anom)
-<<<<<<< HEAD
         #print('y: {}'.format(y))
         # TODO: Let sign be positive
         theta = theta + learning_rate*y*data[idx]#d_anom#- learning_rate*y*d_anom
@@ -135,10 +116,6 @@ def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
         #print(i)
     #print('w: {}'.format(w))
     print("OMD Done")
-=======
-        theta = theta + learning_rate*y*d_anom#- learning_rate*y*d_anom
-
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     return w, clf
 
 
@@ -155,10 +132,7 @@ def loda_transform(loda_clf, data_df):
     X = data_df.drop(columns=['label'])
     hists = loda_clf.histograms_
     num_hists = len(hists)
-<<<<<<< HEAD
     num_bins  = len(hists[0])
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     data = X.to_numpy()
     #transformed_data = np.zeros(N)
     transformed_data = []
@@ -168,7 +142,6 @@ def loda_transform(loda_clf, data_df):
         ith_hists = np.copy(hists)
         for j in range(num_hists):
             wj = 0
-<<<<<<< HEAD
             # dim(projections_[j,:]) is 512, dim(data[i]) is 513...
             # For some reason the dimension of data here is 1 larger than
             # the examples provided when loda model was trained... WHY?
@@ -180,8 +153,6 @@ def loda_transform(loda_clf, data_df):
             # This is just an index for the example number (not a useful feature)
             #print('data 0: {}'.format(data[i,0]))
             #print('data 512: {}'.format(data[i,512])) 
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
             projected_data = loda_clf.projections_[j,:].dot(data[i])
             # Assumes that this also works for finding a single index
             ind = np.searchsorted(loda_clf.limits_[j, :loda_clf.n_bins - 1],
@@ -191,11 +162,7 @@ def loda_transform(loda_clf, data_df):
             ##if ith_hists[j,ind] > 0:
                 #print("Updating wj")
                 ##wj = -math.log2(ith_hists[j,ind])
-<<<<<<< HEAD
             ith_hists[j,ind] = 1 
-=======
-            ith_hists[j,ind] = 1
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
             #zero_inds = np.where(ith_hists[j] != 1)
             #print(ith_hists[j])
             #ith_hists[j, np.arange(len(ith_hists[i]))!=ind] = 0 
@@ -232,15 +199,9 @@ def get_max_anomaly_score(w, D_X):
     idx = 0
     for i in range(N):
         x_curr = np.dot(w, D_X[i])#-w, D_X[i])#D_X.iloc[i])
-<<<<<<< HEAD
         #print('x_curr: {}'.format(x_curr))
         if x_curr > x_max:
             #print('x_curr is new x_max!------------------------------------------------------')
-=======
-        print('x_curr: {}'.format(x_curr))
-        if x_curr > x_max:
-            print('x_curr is new x_max!------------------------------------------------------')
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
             x_max = x_curr
             idx = i
 
@@ -261,22 +222,6 @@ def relu(x_vec):
     return x
 
 
-<<<<<<< HEAD
-=======
-def train_oracle_latent_rep():
-    pass
-
-
-def get_plain_ae(kn_train, kn_val, filename='plain_ae.pth'):
-    CIFAR10_DIM = 32*32
-    NUM_EPOCHS = 20
-    
-    #device = torch.device("cuda")
-    model = get_vanilla_ae(kn_train, kn_val, filename)
-    return model
-
-
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 def get_weight_prior(X_latent):
     '''
     Get weight vector prior using LODA (Pevny16)
@@ -285,12 +230,7 @@ def get_weight_prior(X_latent):
     ----------
     X_val_latent : numpy array
         Describes the latent representation of images in the
-<<<<<<< HEAD
         validation set. Note: This contains known training examples.
-=======
-        validation set. Note: This contains known and unknown
-        examples.
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
     Returns
     -------
@@ -300,18 +240,12 @@ def get_weight_prior(X_latent):
     given latent representation from a model trained on only 6.
     object: Fitted LODA estimator.
     '''
-<<<<<<< HEAD
     X = X_latent.drop(columns=['label'])
     N = len(X)
-=======
-
-    X = X_latent.drop(columns=['label'])
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     n_bins = 10
     n_random_proj = 100
     clf = LODA(n_bins=n_bins, n_random_cuts=n_random_proj)
     model = clf.fit(X)
-<<<<<<< HEAD
     # Note: Laplace smoothing is done when histograms are
     # created inside of pyod
     hists = model.histograms_
@@ -330,38 +264,6 @@ def get_weight_prior(X_latent):
     
     return np.ravel(weight_prior), model 
 
-=======
-    hists = model.histograms_
-    weight_prior = np.copy(model.histograms_)
-    weight_prior = np.log2(weight_prior)
-    #print('hists: {}'.format(hists))
-    #print('hists shape: {}'.format(hists.shape))
-    #print('weight_prior: {}'.format(weight_prior))
-    #print('weight_prior shape: {}'.format(weight_prior.shape))
-    # For each histogram, get max element index, and calculate
-    # -log(\hat{p}), where \hat{p} is the value of the max element
-    ##for i in range(n_random_proj):
-        #print(weight_prior[i])
-        #max_ind = np.argmax(hists[i])
-        #print('max_ind: {}'.format(max_ind))
-        # Calculate the weight associated with this element
-        #print('histogram: {}'.format(hists[i]))
-        #print('In weight prior: arg of log2: {}'.format(hists[i,max_ind]))
-        ##log_probs = -math.log2(hists[i,max_ind])
-        #print('wi: {}'.format(wi))
-        #print('weight_prior (before step 1): {}'.format(weight_prior))
-        ##weight_prior[i,max_ind] = 1
-        #print('weight_prior (after step 1): {}'.format(weight_prior))
-        #print('model hists: {}'.format(hists))
-        ##zero_inds = np.arange(len(weight_prior[i])) != max_ind
-        ##weight_prior[i, np.arange(len(weight_prior[i]))!=max_ind] = 0 
-        #print('weight_prior (step 2): {}'.format(weight_prior))
-        #print('model hists: {}'.format(hists))
-        ##weight_prior[i] *= wi
-
-    return np.ravel(weight_prior), model 
-         
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
 def get_features_t_stats(X_latent):
     '''
@@ -471,25 +373,17 @@ def concat_design_and_target(dataset): #, metadata):
     df = dataset.frame
     num_examples = len(dataset)
     for i in range(num_examples):
-<<<<<<< HEAD
         # Can this be verified?
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
         concat_data.append([dataset[i], df.iloc[i]['label']])
          
     return concat_data
 
 
-<<<<<<< HEAD
 def construct_latent_set(model, kn_dataset, unkn_dataset=None):
-=======
-def construct_latent_set(model, kn_dataset, unkn_dataset):
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     '''Build dataset from latent representation given
     a model that acts as the encoder and a dataset of
     raw data that is transformed by the encoder'''
     kn_X_y = concat_design_and_target(kn_dataset)#, metadata)
-<<<<<<< HEAD
    
     # If unkn_dataset is specified, then concatenate the two 
     if unkn_dataset:
@@ -500,11 +394,6 @@ def construct_latent_set(model, kn_dataset, unkn_dataset):
         dataset = kn_X_y
 
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
-=======
-    unkn_X_y = concat_design_and_target(unkn_dataset)
-    kn_unkn_X_y = torch.utils.data.ConcatDataset([kn_X_y, unkn_X_y])
-    loader = torch.utils.data.DataLoader(kn_unkn_X_y, batch_size=1, shuffle=True)
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     col_labels_loaded = False
     col_labels = []
     embed_list = []
@@ -514,7 +403,6 @@ def construct_latent_set(model, kn_dataset, unkn_dataset):
     
     # NOTE: Each image batch consists of one image
     for i, (img_batch, label) in enumerate(loader):
-<<<<<<< HEAD
         #if i < 10:
         #    filename = '{}_{}.png'.format(label[0],i)
         #    img = img_batch[0]
@@ -522,9 +410,6 @@ def construct_latent_set(model, kn_dataset, unkn_dataset):
         #    img_np = np.swapaxes(img_np, 0, 2)
         #    plt.imshow(img_np)
         #    plt.savefig(filename)
-            
-=======
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
         # If pooling was used, we get data AND indices, so we
         # need "don't care" notation as second returned var
         img_batch = img_batch.to(device)
@@ -542,11 +427,7 @@ def construct_latent_set(model, kn_dataset, unkn_dataset):
         val_latent_rep_df.loc[i] = embedding
 
     print("Latent Dataframe Loading Complete")
-<<<<<<< HEAD
     #print(val_latent_rep_df)
-=======
-    print(val_latent_rep_df)
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
     return val_latent_rep_df
 
 
@@ -585,12 +466,8 @@ def test_results(test_data, weights, y_class, anom_classes):
         y[i] = get_feedback(y_class[i], anom_classes)
     #data_iter = tqdm(X.iterrows())
     for i, example in enumerate(X):
-<<<<<<< HEAD
         # TODO: MAKE WEIGHTS POSITIVE AGAIN!!!!
         scores[i] = np.dot(weights, example)#-weights, example)
-=======
-        scores[i] = np.dot(-weights, example)#-weights, example)
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
     return scores, y
 
@@ -598,12 +475,8 @@ def test_results(test_data, weights, y_class, anom_classes):
 def plot_auroc(y_actual, scores):
     fpr, tpr, thresholds = roc_curve(y_actual, scores, pos_label=1)
     plt.plot(fpr,tpr)
-<<<<<<< HEAD
     plt.savefig('auroc_plot.png')
 
-=======
-    plt.show()
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 
 def main():
     CIFAR_CLASSES = ['airplane', 'automobile', 'bird', 'cat', 'deer',
@@ -624,7 +497,6 @@ def main():
         [0, 1, 2, 6],
         [4, 5, 6, 9],
     ]
-<<<<<<< HEAD
     
     NUM_SPLITS = 3#len(splits)
 
@@ -740,78 +612,5 @@ def main():
     # open category detector g
    
  
-=======
-
-    anom_classes = [CIFAR_CLASSES[i] for i in splits[SPLIT]]
-
-    # Get datasets of known and unknown classes
-    kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test = load_data(SPLIT)
-    
-    # binary or multiclass category detector??
-
-    # WHAT IS ACTUALLY RETURNED HERE???
-    #kn_ae = get_plain_ae(kn_train, kn_val,'kn_std_ae_split_{}.pth'.format(0))
-    kn_classifier = get_resnet_18_classifier(kn_train, kn_val)
-
-    ''' <><><><><><><> USE THIS IF YOU NEED AE THAT IS TRAINED ON KN/UNKN <><><><><>
-    # Training plain autoencoder on all training data
-    kn_unkn_train = torch.utils.data.ConcatDataset([kn_train,unkn_train])
-    # This preserves metadata
-    # MIGHT NOT NEED kn_unkn_val_frame = pd.concat([kn_val.frame, unkn_val.frame])
-    kn_unkn_val = torch.utils.data.ConcatDataset([kn_val,  unkn_val  ])
-    kn_unkn_ae  = get_plain_ae(kn_unkn_train, kn_unkn_val,
-                              'kn_unkn_std_ae_split_{}.pth'.format(0))
-
-    '''
-    #if os.path.isfile('weights_oracle_feedback.txt'):
-    #    # Load weights
-    #    with open('weights_oracle_feedback.txt', 'rb') as f:
-    #        w = np.load(f)
-        
-    #else:
-    # Get latent set used to train linear anomaly detector from the
-    # validation set comprised of all classes. Note that we are
-    # using the autoencoder trained only on known examples here.
-    train_latent_df  = construct_latent_set(kn_classifier, kn_train, unkn_train)
-    val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)#kn_train, unkn_train)
-    ## latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
-    
-    # NEXT STEP: Use this latent data to train linear anomaly detector!! :)
-
-    # Note that the train_latent_df is used for determining the initial weight vector
-    w, clf = omd(train_latent_df, val_latent_df, anom_classes)
-
-    #with open('weights_oracle_feedback.txt', 'wb') as f:
-    #    np.save(f, w)
-    # END ELSE
-
-    #latent_df = construct_latent_set(kn_ae, kn_val, unkn_val)
-    
-    
-    # Construct test set and latentify test examples
-    kn_unkn_test = construct_latent_set(kn_classifier, kn_test, unkn_test)
-    test_target = kn_unkn_test['label']
-    kn_unkn_test_trans = loda_transform(clf, kn_unkn_test)
-    
-    # Test anomaly detection score on linear model
-    # plot AUC (start general, then move to indiv classes?)
-    scores, y_actual = test_results(kn_unkn_test_trans, w, test_target, anom_classes)
-    for i, pred in enumerate(scores):
-        print('{}  {}'.format(pred, y_actual[i]))
-    # IF BAD, reevaluate LODA initialization
-
-    print('AUROC: {}'.format(roc_auc_score(y_actual, scores)))
-    plot_auroc(y_actual, scores)
-
-
-
-    
-    # NEXT: Run on all 5 anomaly splits.
-    
-    
-    # Use latent space to train classifier AND as input to scoring function for
-    # open category detector g
-    
->>>>>>> f6cda98613ec03c135663ba92a57cb31db0cb41d
 if __name__ == '__main__':
     main()
