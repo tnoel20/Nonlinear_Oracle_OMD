@@ -1,0 +1,6 @@
+from torch.optim.optimizer import Optimizer, required
+import copy
+
+class OMD(Optimizer):
+
+    def __init__(self

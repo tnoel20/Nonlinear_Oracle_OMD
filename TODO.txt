@@ -1,0 +1,4 @@
+11/16/2020
+
+-> If issues occur with zero probabilities, then
+   utilize Laplace smoothing.

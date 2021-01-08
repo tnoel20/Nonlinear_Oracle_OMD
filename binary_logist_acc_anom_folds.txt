@@ -1,0 +1,1 @@
+binary logistic regression score, split 0: 0.706

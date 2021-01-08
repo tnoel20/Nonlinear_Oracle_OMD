@@ -1,0 +1,51 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torchvision
+import torchvision.transforms as T
+import pandas as pd
+from pyod.models.loda import LODA
+
+def get_synth_data(num_points=1000, num_features=128):
+    data = np.random.rand(num_points, num_features)
+    return pd.DataFrame.from_records(data) 
+
+
+def get_weight_prior(X_val_latent):
+    '''
+    Get weight vector prior using LODA (Pevny16)
+    
+    Parameters
+    ----------
+    X_val_latent : numpy array
+        Describes the latent representation of images in the
+        validation set. Note: This contains known and unknown
+        examples.
+
+    Returns
+    -------
+    learned weights associated with each latent feature. Used as the
+    prior in training a linear anomaly detector on all classes
+    given latent representation from a model trained on only 6.
+    
+    '''
+    #contamination = 0.4 # 6 known classes, 4 unknown using CIFAR10
+    #n_bin = len()
+    clf_name = 'LODA'
+    clf = LODA()
+    clf.fit(X_val_latent)
+
+    # y_val_latent_pred = clf.labels_ # binary (0: inlier, 1: outlier)
+    # y_train_scores = clf.decision_scores_ # raw outlier scores
+
+    return clf.get_params() # By default deep=True
+
+
+def main():
+    data = get_synth_data()
+    w = get_weight_prior()
+    print(w)
+
+
+if __name__ == '__main__':
+    main()
