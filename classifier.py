@@ -279,7 +279,7 @@ class Net(nn.Module):
 '''
 
 
-def train(model, device, tr_data, tr_target, val, val_target, num_epochs=10,\
+def train(model, device, tr_data, tr_target, val, val_target, num_epochs=30,\
           learning_rate=1e-3):#batch_size=64 
     torch.manual_seed(42)
     criterion = nn.CrossEntropyLoss()
@@ -294,9 +294,9 @@ def train(model, device, tr_data, tr_target, val, val_target, num_epochs=10,\
     # Initial conditions
     val_loss_list = [1E6, 0]
     EPS = 1e-3
-    #for epoch in range(num_epochs):
-    while val_accuracy < target_val_accuracy:
-    #epoch < num_epochs and abs(val_loss_list[epoch] - val_loss_list[epoch-1]) > EPS:
+    for epoch in range(num_epochs):
+    #while val_accuracy < target_val_accuracy:
+    #while epoch < num_epochs and abs(val_loss_list[epoch] - val_loss_list[epoch-1]) > EPS:
         for i,img_batch in enumerate(tr_data):
             img_batch = img_batch.to(device)
             batch_target = torch.tensor(tr_target[i]).to(device)
@@ -320,6 +320,7 @@ def train(model, device, tr_data, tr_target, val, val_target, num_epochs=10,\
         model.train()
         #val_accuracy_list.append(val_accuracy)
         epoch += 1
+    
         
     return outputs, val_loss_list, val_accuracy_list
 
@@ -416,7 +417,7 @@ def to_class_index(target_set, classes, split, splits, batch_size):
 
 def get_resnet_18_classifier(kn_train=None, kn_val=None, split=0, filename='resnet18_classifier_kn.pth'):
     CIFAR10_DIM = 32*32
-    NUM_EPOCHS = 7
+    NUM_EPOCHS = 30
     NUM_CHANNELS = 3
     NUM_KNOWN = 6
     NUM_UNKNOWN = 4
