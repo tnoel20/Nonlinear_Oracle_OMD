@@ -1,0 +1,134 @@
+binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6882
+AUROC_0: 0.48767008333333334
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.4446242083333334
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.5556577916666666
+
+binary logistic regression score, split 3: 0.7613
+loda tx binary logistic regression score, split 3: 0.7613
+AUROC_3: 0.5083879166666667
+
+binary logistic regression score, split 4: 0.7417
+loda tx binary logistic regression score, split 4: 0.7417
+AUROC_4: 0.52555975
+
+-------------------------------------------------------------
+
+-> Deletion error fixed
+
+binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6882
+AUROC_0: 0.3521696458333333
+
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.5382458333333333
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.5297048750000001
+
+binary logistic regression score, split 3: 0.7614
+loda tx binary logistic regression score, split 3: 0.7614
+AUROC_3: 0.5336582083333333
+
+binary logistic regression score, split 4: 0.7418
+loda tx binary logistic regression score, split 4: 0.7418
+AUROC_4: 0.5666410416666667
+
+-------------------------------------------------------------
+
+-> Starting with first split. We get different AUROC when 
+we start with a different split. There must be some unintended 
+inter-trial effects that need to be identified.
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.499257375
+
+-------------------------------------------------------------
+
+-> Different results depending on order of experiments. These
+results replicate the second batch of results correctly
+
+binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6882
+AUROC_0: 0.3521696458333333
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.5382458333333333
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.5297048750000001
+
+binary logistic regression score, split 3: 0.7614
+loda tx binary logistic regression score, split 3: 0.7614
+AUROC_3: 0.5336582083333333
+
+binary logistic regression score, split 4: 0.7418
+loda tx binary logistic regression score, split 4: 0.7418
+AUROC_4: 0.5666410416666667
+
+-------------------------------------------------------------
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.511496875
+
+-------------------------------------------------------------
+
+binary logistic regression score, split 3: 0.7614
+loda tx binary logistic regression score, split 3: 0.7614
+AUROC_3: 0.5033783541666667
+
+------------------------------------------------------------
+
+binary logistic regression score, split 4: 0.7418
+loda tx binary logistic regression score, split 4: 0.7418
+AUROC_4: 0.5647448125000001
+
+------------------------------------------------------------
+--- Post-Debugging Round 2 ---------------------------------
+------------------------------------------------------------
+
+
+binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6882
+AUROC_0: 0.5343520416666667
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.6981635416666666
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.7126904791666666
+
+binary logistic regression score, split 3: 0.7614
+loda tx binary logistic regression score, split 3: 0.7614
+AUROC_3: 0.6553317291666666
+
+binary logistic regression score, split 4: 0.7418
+loda tx binary logistic regression score, split 4: 0.7418
+AUROC_4: 0.7145835833333334
+
+
+-----------------------------------------------------------
+----------- Verification ----------------------------------
+-----------------------------------------------------------
+
+
+
+binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6882
+AUROC_0: 0.5343520416666667
+

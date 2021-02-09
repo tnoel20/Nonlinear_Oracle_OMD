@@ -279,9 +279,8 @@ class Net(nn.Module):
 '''
 
 
-def train(model, device, tr_data, tr_target, val, val_target, num_epochs=30,\
-          learning_rate=1e-3):#batch_size=64 
-    torch.manual_seed(42)
+def train(model, device, tr_data, tr_target, val, val_target, num_epochs=30, learning_rate=1e-3):#batch_size=64 
+    torch.manual_seed(0)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=learning_rate, 
@@ -445,13 +444,10 @@ def get_resnet_18_classifier(kn_train=None, kn_val=None, split=0, filename='resn
     if os.path.isfile(filename):
         # Load model
         model.load_state_dict(torch.load(filename))
-        model.eval()
         
     else:
-        tr_loader = torch.utils.data.DataLoader(kn_train, batch_size=BATCH_SIZE, shuffle=False, \
-                                             pin_memory=True, drop_last=True)
-        val_loader = torch.utils.data.DataLoader(kn_val, batch_size=BATCH_SIZE, shuffle=False, \
-                                             pin_memory=True, drop_last=True)
+        tr_loader = torch.utils.data.DataLoader(kn_train, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, drop_last=True)
+        val_loader = torch.utils.data.DataLoader(kn_val,  batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, drop_last=True)
 
         # Convert labels into lists and drop any labels
         # that belong to any training examples dropped in
@@ -467,10 +463,10 @@ def get_resnet_18_classifier(kn_train=None, kn_val=None, split=0, filename='resn
         val_target = to_class_index(val_target, CIFAR_CLASSES, SPLIT, splits, BATCH_SIZE)
         
         # Train model
-        outputs, val_loss = train(model, device, tr_loader, tr_target,\
-                                  val_loader, val_target, num_epochs=NUM_EPOCHS)
+        outputs, val_loss, val_acc = train(model, device, tr_loader, tr_target, val_loader, val_target, num_epochs=NUM_EPOCHS)
         torch.save(model.state_dict(), filename)
-
+  
+    model.eval()
     return model
 
     

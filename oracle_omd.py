@@ -14,6 +14,7 @@ from oc_data_load import CIFAR10_Data
 #from vanilla_ae import get_vanilla_ae
 from classifier import get_resnet_18_classifier
 
+MODEL_DATA_DIRECTORY = '/nfs/hpc/share/noelt/data/Oracle_Data' 
 
 def load_data(split=0, normalize=False):
     ''' 
@@ -72,7 +73,7 @@ def load_data(split=0, normalize=False):
     return (kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test)
 
 
-def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
+def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2):
     '''
     Training a linear anomaly detector
 
@@ -89,9 +90,21 @@ def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
     '''
     N = len(latent_data)
     T = N
-    labels = latent_data['label']
+    labels = latent_data['label'].copy()
+    labels = labels.to_numpy().reshape((len(labels),1))
     theta, clf = get_weight_prior(train_latent_data)
-    data = loda_transform(clf, latent_data)
+    theta = np.reshape(theta, (len(theta), 1))
+    #data = loda_transform(clf, latent_data)
+    
+    loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(split)) 
+ 
+    if os.path.isfile(loda_tx_val_filename):
+        with open(loda_tx_val_filename, 'rb') as f:
+            data = np.load(f)
+    else:
+        data = loda_transform(clf_omd, latent_data)
+        np.save(loda_tx_val_filename, data) 
+
     #print('Weight Prior: {}'.format(theta))
     # Note that this is usually implemented as an
     # online algorithm so number of time steps (steps
@@ -103,15 +116,17 @@ def omd(train_latent_data, latent_data, anom_classes, learning_rate=1e-2):
         w = get_nearest_w(theta)
         #w = theta
         d_anom, idx = get_max_anomaly_score(w, data)
-        y = get_feedback(labels.iloc[idx], anom_classes)
+        y = get_feedback(labels[idx,0], anom_classes)
         # TAG
         #data.drop(data.index[idx])
-        np.delete(data, idx)
+        data   = np.delete(data, idx, axis=0)
+        labels = np.delete(labels, idx, axis=0) # MIGHT NEED TO SPECIFY AXIS 
         # linear loss function
         # loss = -y*np.dot(w,d_anom)
         #print('y: {}'.format(y))
-        # TODO: Let sign be positive
-        theta = theta + learning_rate*y*data[idx]#d_anom#- learning_rate*y*d_anom
+        # TODO: Let sign be positive 
+        theta = theta + learning_rate*y*d_anom#- learning_rate*y*d_anom
+        #if i == T-1:
         #print('theta: {}'.format(theta))
         #print(i)
     #print('w: {}'.format(w))
@@ -194,18 +209,18 @@ def get_max_anomaly_score(w, D_X):
     with the largest anomaly score    '''
     N = len(D_X)
     #D_X = D.drop(columns=['label']).to_numpy()
-    x_curr = np.dot(w, D_X[0])#-w, D_X[0])#D_X.iloc[0])
+    x_curr = np.dot(w.T, D_X[0].reshape((len(D_X[0]),1))) #-w, D_X[0])#D_X.iloc[0])
     x_max = x_curr
     idx = 0
     for i in range(N):
-        x_curr = np.dot(w, D_X[i])#-w, D_X[i])#D_X.iloc[i])
-        #print('x_curr: {}'.format(x_curr))
+        x_curr = np.dot(w.T, D_X[i].reshape((len(D_X[i]),1))) #-w, D_X[i])#D_X.iloc[i])
+        #print('x_curr size: {}'.format(x_curr.shape))
         if x_curr > x_max:
-            #print('x_curr is new x_max!------------------------------------------------------')
+            #print('x_curr is new x_max!--------------------------------------------')
             x_max = x_curr
             idx = i
 
-    return x_max, idx
+    return D_X[idx].reshape(len(D_X[idx]),1), idx
 
 
 def get_nearest_w(theta):
@@ -466,25 +481,31 @@ def test_results(test_data, weights, y_class, anom_classes):
         y[i] = get_feedback(y_class[i], anom_classes)
     #data_iter = tqdm(X.iterrows())
     for i, example in enumerate(X):
-        # TODO: MAKE WEIGHTS POSITIVE AGAIN!!!!
-        scores[i] = np.dot(weights, example)#-weights, example)
+        # TODO: Make weights positive?!
+        scores[i] = np.dot(weights.T, example.reshape((len(example),1))) #-weights, example)
 
     return scores, y
 
 
-def plot_auroc(y_actual, scores):
+def plot_save_auroc(y_actual, scores, split):
+    roc_curve_fn = model_path = os.path.join(MODEL_DATA_DIRECTORY, 'roc_curve_{}.txt'.format(split))
     fpr, tpr, thresholds = roc_curve(y_actual, scores, pos_label=1)
+    with open(roc_curve_fn, 'a+') as f:
+        f.write('FPR: \n{}'.format(fpr))
+        f.write('TPR: \n{}'.format(tpr))
+        f.write('Thres: \n{}'.format(thresholds))
     plt.plot(fpr,tpr)
-    plt.savefig('auroc_plot.png')
+    plt.savefig('auroc_plot_{}.png'.format(split))
 
 
 def main():
     CIFAR_CLASSES = ['airplane', 'automobile', 'bird', 'cat', 'deer',
                  'dog', 'frog', 'horse', 'ship', 'truck']
 
-    SPLIT = 0
+    SPLIT = 0 
     
-    MODEL_DATA_DIRECTORY = '/nfs/hpc/share/noelt/data/Oracle_Data' 
+    # Seed the rng
+    np.random.seed(0)
 
     # The 2nd dimension of this list contains indices of anomalous
     # classes corresponding to the split index, represented by
@@ -500,7 +521,7 @@ def main():
         [4, 5, 6, 9],
     ]
     
-    NUM_SPLITS = 3#len(splits)
+    NUM_SPLITS = len(splits)
 
     # Temporary, had to specify last splits because all 5 produce files
     # that are collectively too big for my home folder in the hpc
@@ -565,9 +586,10 @@ def main():
          else:
              val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
              val_latent_df.to_csv(Z_val_filename, index=False)
-     	
+     
+	
          # Note that the train_latent_df is used for determining the initial weight vector
-         w, clf_omd = omd(train_latent_df, val_latent_df, anom_classes)
+         w, clf_omd = omd(train_latent_df, val_latent_df, anom_classes, j)
      	
          # Construct test set and embed test examples
          if os.path.isfile(Z_test_filename):
@@ -580,7 +602,7 @@ def main():
          # Logistic regression test
          X_val = val_latent_df.drop(columns=['label'])
          X_val = X_val.values
-         y_val = val_latent_df['label']
+         y_val = val_latent_df['label'].copy()
          len_val = len(y_val)
          for i in range(len_val):
              y_val.iloc[i] = get_feedback(y_val.iloc[i], anom_classes)
@@ -591,7 +613,7 @@ def main():
          # Calculating logistic regression accuracy
          X_test = test_latent_df.drop(columns=['label'])
          X_test = X_test.values
-         y_test = test_latent_df['label']
+         y_test = test_latent_df['label'].copy()
          len_test = len(y_test)
          for i in range(len_test):
              y_test.iloc[i] = get_feedback(y_test.iloc[i], anom_classes)
@@ -599,7 +621,7 @@ def main():
          y_test = y_test.astype('int')
          # TODO binarize labels
          logistic_score = clf.score(X_test, y_test)
-         print('binary logistic regression score, split {}: {}\n'.format(j, logistic_score), 
+         print('binary logistic regression score, split {}: {}'.format(j, logistic_score), 
                file=open("results.txt", "a+"))
          
          # TODO: Compute Binary Logistic regression scores on LODA transforms
@@ -632,20 +654,21 @@ def main():
          
          # See how the classifier performs
          loda_tx_logistic_score = clf_loda_repr.score(kn_unkn_test_loda_tx, y_test)
-         print('loda tx binary logistic regression score, split {}: {}\n'.format(j, logistic_score), 
+         print('loda tx binary logistic regression score, split {}: {}'.format(j, logistic_score), 
                file=open("results.txt", "a+"))
 
          
          # Test anomaly detection score on linear model
          # plot AUC (start general, then move to indiv classes?)
-         test_target          = test_latent_df['label']
-         scores, y_actual = test_results(kn_unkn_loda_tx, w, test_target, anom_classes)
+         test_target      = test_latent_df['label']
+         
+         scores, y_actual = test_results(kn_unkn_test_loda_tx, w, test_target, anom_classes)
          #for i, pred in enumerate(scores):
              #print('{}  {}'.format(pred, y_actual[i]))
          # IF BAD, reevaluate LODA initialization
          print(y_actual)
          print('AUROC_{}: {}\n'.format(j, roc_auc_score(y_actual, scores)), file=open("results.txt", "a+"))
-         #plot_auroc(y_actual, scores)
+         plot_save_auroc(y_actual, scores, j)
     
     # NEXT: Run on all 5 anomaly splits.
     
