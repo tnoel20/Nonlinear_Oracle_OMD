@@ -487,15 +487,18 @@ def test_results(test_data, weights, y_class, anom_classes):
     return scores, y
 
 
-def plot_save_auroc(y_actual, scores, split):
-    roc_curve_fn = model_path = os.path.join(MODEL_DATA_DIRECTORY, 'roc_curve_{}.txt'.format(split))
+def plot_save_auroc(y_actual, scores, split, learning_rates, lridx):
+    roc_curve_fn = model_path = os.path.join(MODEL_DATA_DIRECTORY, 'roc_curve_{}_lr{}.txt'.format(split,lridx))
     fpr, tpr, thresholds = roc_curve(y_actual, scores, pos_label=1)
     with open(roc_curve_fn, 'a+') as f:
         f.write('FPR: \n{}'.format(fpr))
         f.write('TPR: \n{}'.format(tpr))
         f.write('Thres: \n{}'.format(thresholds))
+    # TODO: Add axis labels and title
+    if split == 0:
+        plt.figure(lridx)
     plt.plot(fpr,tpr)
-    plt.savefig('auroc_plot_{}.png'.format(split))
+    plt.savefig('auroc_plot_{}_lr{}.png'.format(split,lridx))
 
 
 def main():
@@ -505,7 +508,8 @@ def main():
     SPLIT = 0 
     
     # Seed the rng
-    np.random.seed(0)
+    SEED = 0
+    np.random.seed(SEED)
 
     # The 2nd dimension of this list contains indices of anomalous
     # classes corresponding to the split index, represented by
@@ -521,154 +525,158 @@ def main():
         [4, 5, 6, 9],
     ]
     
+    learning_rates = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3]
+    NUM_LR = len(learning_rates)
     NUM_SPLITS = len(splits)
-
-    # Temporary, had to specify last splits because all 5 produce files
-    # that are collectively too big for my home folder in the hpc
-    for j in range(NUM_SPLITS): 
-        
-         # To revert, replace j with SPLIT
-         anom_classes = [CIFAR_CLASSES[i] for i in splits[SPLIT]]
-         # DEBUG
-         #print(anom_classes)
-         # GUBED
-         # Get datasets of known and unknown classes
-         # To revert, replace j with SPLIT
-         
-         kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test = load_data(j) 
-
-         model_path = os.path.join(MODEL_DATA_DIRECTORY, 'resnet18_classifier_kn_{}.pth'.format(j))
-         kn_classifier = get_resnet_18_classifier(kn_train, kn_val, split=j, filename=model_path)
-         
-         '''
-         # Load latent representations of the examples from the nominal classes 
-         # in the training set
-         if os.path.isfile('train_latent_df.csv'):
-             train_latent_df = pd.read_csv('train_latent_df.csv')
-         else:
-             train_latent_df  = construct_latent_set(kn_classifier, kn_train)
-             train_latent_df.to_csv('train_latent_df.csv', index=False)
-     	
-         # Load latent representations of all examples in the validation set
-         if os.path.isfile('val_latent_df.csv'):
-             val_latent_df = pd.read_csv('val_latent_df.csv')
-         else:
-             val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
-             val_latent_df.to_csv('val_latent_df.csv', index=False)
-     	
-         # Note that the train_latent_df is used for determining the initial weight vector
-         w, clf = omd(train_latent_df, val_latent_df, anom_classes)
-     	
-         # Construct test set and embed test examples
-         if os.path.isfile('test_latent_df.csv'):
-             test_latent_df = pd.read_csv('test_latent_df.csv')
-         else:   
-             test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
-             test_latent_df.to_csv('test_latent_df.csv', index=False)
-         '''
-         
-         Z_train_filename = os.path.join(MODEL_DATA_DIRECTORY, 'train_latent_df_{}.csv'.format(j)) 
-         Z_val_filename   = os.path.join(MODEL_DATA_DIRECTORY, 'val_latent_df_{}.csv'.format(j))
-         Z_test_filename  = os.path.join(MODEL_DATA_DIRECTORY, 'test_latent_df_{}.csv'.format(j))
-         
-     	 
-         # Load latent representations of the examples from the nominal classes 
-         # in the training set
-         if os.path.isfile(Z_train_filename):
-             train_latent_df = pd.read_csv(Z_train_filename)
-         else:
-             train_latent_df  = construct_latent_set(kn_classifier, kn_train)
-             train_latent_df.to_csv(Z_train_filename, index=False)
-     	
-         # Load latent representations of all examples in the validation set
-         if os.path.isfile(Z_val_filename):
-             val_latent_df = pd.read_csv(Z_val_filename)
-         else:
-             val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
-             val_latent_df.to_csv(Z_val_filename, index=False)
-     
-	
-         # Note that the train_latent_df is used for determining the initial weight vector
-         w, clf_omd = omd(train_latent_df, val_latent_df, anom_classes, j)
-     	
-         # Construct test set and embed test examples
-         if os.path.isfile(Z_test_filename):
-             test_latent_df = pd.read_csv(Z_test_filename)
-         else:   
-             test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
-             test_latent_df.to_csv(Z_test_filename, index=False)
-     	
+    
+    for i in range(NUM_LR):
+        # Temporary, had to specify last splits because all 5 produce files
+        # that are collectively too big for my home folder in the hpc
+        for j in range(NUM_SPLITS): 
+            
+             # To revert, replace j with SPLIT
+             anom_classes = [CIFAR_CLASSES[i] for i in splits[SPLIT]]
+             # DEBUG
+             #print(anom_classes)
+             # GUBED
+             # Get datasets of known and unknown classes
+             # To revert, replace j with SPLIT
              
-         # Logistic regression test
-         X_val = val_latent_df.drop(columns=['label'])
-         X_val = X_val.values
-         y_val = val_latent_df['label'].copy()
-         len_val = len(y_val)
-         for i in range(len_val):
-             y_val.iloc[i] = get_feedback(y_val.iloc[i], anom_classes)
-         y_val = y_val.values
-         y_val = y_val.astype('int')
-         clf = LogisticRegression(max_iter=1000).fit(X_val, y_val)
-     	
-         # Calculating logistic regression accuracy
-         X_test = test_latent_df.drop(columns=['label'])
-         X_test = X_test.values
-         y_test = test_latent_df['label'].copy()
-         len_test = len(y_test)
-         for i in range(len_test):
-             y_test.iloc[i] = get_feedback(y_test.iloc[i], anom_classes)
-         y_test = y_test.values
-         y_test = y_test.astype('int')
-         # TODO binarize labels
-         logistic_score = clf.score(X_test, y_test)
-         print('binary logistic regression score, split {}: {}'.format(j, logistic_score), 
-               file=open("results.txt", "a+"))
+             kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test = load_data(j) 
+    
+             model_path = os.path.join(MODEL_DATA_DIRECTORY, 'resnet18_classifier_kn_{}.pth'.format(j))
+             kn_classifier = get_resnet_18_classifier(kn_train, kn_val, split=j, filename=model_path)
+             
+             '''
+             # Load latent representations of the examples from the nominal classes 
+             # in the training set
+             if os.path.isfile('train_latent_df.csv'):
+                 train_latent_df = pd.read_csv('train_latent_df.csv')
+             else:
+                 train_latent_df  = construct_latent_set(kn_classifier, kn_train)
+                 train_latent_df.to_csv('train_latent_df.csv', index=False)
+         	
+             # Load latent representations of all examples in the validation set
+             if os.path.isfile('val_latent_df.csv'):
+                 val_latent_df = pd.read_csv('val_latent_df.csv')
+             else:
+                 val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
+                 val_latent_df.to_csv('val_latent_df.csv', index=False)
+         	
+             # Note that the train_latent_df is used for determining the initial weight vector
+             w, clf = omd(train_latent_df, val_latent_df, anom_classes)
+         	
+             # Construct test set and embed test examples
+             if os.path.isfile('test_latent_df.csv'):
+                 test_latent_df = pd.read_csv('test_latent_df.csv')
+             else:   
+                 test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
+                 test_latent_df.to_csv('test_latent_df.csv', index=False)
+             '''
+             
+             Z_train_filename = os.path.join(MODEL_DATA_DIRECTORY, 'train_latent_df_{}.csv'.format(j)) 
+             Z_val_filename   = os.path.join(MODEL_DATA_DIRECTORY, 'val_latent_df_{}.csv'.format(j))
+             Z_test_filename  = os.path.join(MODEL_DATA_DIRECTORY, 'test_latent_df_{}.csv'.format(j))
+             
+         	 
+             # Load latent representations of the examples from the nominal classes 
+             # in the training set
+             if os.path.isfile(Z_train_filename):
+                 train_latent_df = pd.read_csv(Z_train_filename)
+             else:
+                 train_latent_df  = construct_latent_set(kn_classifier, kn_train)
+                 train_latent_df.to_csv(Z_train_filename, index=False)
+         	
+             # Load latent representations of all examples in the validation set
+             if os.path.isfile(Z_val_filename):
+                 val_latent_df = pd.read_csv(Z_val_filename)
+             else:
+                 val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
+                 val_latent_df.to_csv(Z_val_filename, index=False)
          
-         # TODO: Compute Binary Logistic regression scores on LODA transforms
-         # Put validation data through loda transform, then pass it to
-         # regression, then score the classifier on the LODA transformed test
-         # data below.
-        
-         # Specify path to save loda-transformed latent representation of the validation set
-         loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(j)) 
- 
-         if os.path.isfile(loda_tx_val_filename):
-             with open(loda_tx_val_filename, 'rb') as f:
-                 kn_unkn_val_loda_tx = np.load(f)
-         else:
-             kn_unkn_val_loda_tx = loda_transform(clf_omd, val_latent_df)
-             np.save(loda_tx_val_filename, kn_unkn_val_loda_tx) 
-         
-         # Train a binary logistic regression classifier on the loda-tx'd latent representations    
-         clf_loda_repr       = LogisticRegression(max_iter=1000).fit(kn_unkn_val_loda_tx, y_val)
-         
-         # Specify path to save loda-transformed latent representation of the test set
-         loda_tx_test_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_test_{}.npy'.format(j)) 
- 
-         if os.path.isfile(loda_tx_test_filename):
-             with open(loda_tx_test_filename, 'rb') as f:
-                 kn_unkn_test_loda_tx = np.load(f)
-         else:
-             kn_unkn_test_loda_tx = loda_transform(clf_omd, test_latent_df)
-             np.save(loda_tx_test_filename, kn_unkn_test_loda_tx) 
-         
-         # See how the classifier performs
-         loda_tx_logistic_score = clf_loda_repr.score(kn_unkn_test_loda_tx, y_test)
-         print('loda tx binary logistic regression score, split {}: {}'.format(j, logistic_score), 
-               file=open("results.txt", "a+"))
-
-         
-         # Test anomaly detection score on linear model
-         # plot AUC (start general, then move to indiv classes?)
-         test_target      = test_latent_df['label']
-         
-         scores, y_actual = test_results(kn_unkn_test_loda_tx, w, test_target, anom_classes)
-         #for i, pred in enumerate(scores):
-             #print('{}  {}'.format(pred, y_actual[i]))
-         # IF BAD, reevaluate LODA initialization
-         print(y_actual)
-         print('AUROC_{}: {}\n'.format(j, roc_auc_score(y_actual, scores)), file=open("results.txt", "a+"))
-         plot_save_auroc(y_actual, scores, j)
+    	
+             # Note that the train_latent_df is used for determining the initial weight vector
+             w, clf_omd = omd(train_latent_df, val_latent_df, anom_classes, j, learning_rate=learning_rates[i])
+         	
+             # Construct test set and embed test examples
+             if os.path.isfile(Z_test_filename):
+                 test_latent_df = pd.read_csv(Z_test_filename)
+             else:   
+                 test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
+                 test_latent_df.to_csv(Z_test_filename, index=False)
+         	
+             '''     
+             # Logistic regression test
+             X_val = val_latent_df.drop(columns=['label'])
+             X_val = X_val.values
+             y_val = val_latent_df['label'].copy()
+             len_val = len(y_val)
+             for i in range(len_val):
+                 y_val.iloc[i] = get_feedback(y_val.iloc[i], anom_classes)
+             y_val = y_val.values
+             y_val = y_val.astype('int')
+             clf = LogisticRegression(max_iter=1000).fit(X_val, y_val)
+         	
+             # Calculating logistic regression accuracy
+             X_test = test_latent_df.drop(columns=['label'])
+             X_test = X_test.values
+             y_test = test_latent_df['label'].copy()
+             len_test = len(y_test)
+             for i in range(len_test):
+                 y_test.iloc[i] = get_feedback(y_test.iloc[i], anom_classes)
+             y_test = y_test.values
+             y_test = y_test.astype('int')
+             # TODO binarize labels
+             logistic_score = clf.score(X_test, y_test)
+             print('binary logistic regression score, split {}: {}'.format(j, logistic_score), 
+                   file=open("results.txt", "a+"))
+             
+             # TODO: Compute Binary Logistic regression scores on LODA transforms
+             # Put validation data through loda transform, then pass it to
+             # regression, then score the classifier on the LODA transformed test
+             # data below.
+             '''
+             # Specify path to save loda-transformed latent representation of the validation set
+             loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(j)) 
+     
+             if os.path.isfile(loda_tx_val_filename):
+                 with open(loda_tx_val_filename, 'rb') as f:
+                     kn_unkn_val_loda_tx = np.load(f)
+             else:
+                 kn_unkn_val_loda_tx = loda_transform(clf_omd, val_latent_df)
+                 np.save(loda_tx_val_filename, kn_unkn_val_loda_tx) 
+             ''' 
+             # Train a binary logistic regression classifier on the loda-tx'd latent representations    
+             clf_loda_repr       = LogisticRegression(max_iter=1000).fit(kn_unkn_val_loda_tx, y_val)
+             '''
+             # Specify path to save loda-transformed latent representation of the test set
+             loda_tx_test_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_test_{}.npy'.format(j)) 
+     
+             if os.path.isfile(loda_tx_test_filename):
+                 with open(loda_tx_test_filename, 'rb') as f:
+                     kn_unkn_test_loda_tx = np.load(f)
+             else:
+                 kn_unkn_test_loda_tx = loda_transform(clf_omd, test_latent_df)
+                 np.save(loda_tx_test_filename, kn_unkn_test_loda_tx) 
+             
+             '''
+             # See how the classifier performs
+             loda_tx_logistic_score = clf_loda_repr.score(kn_unkn_test_loda_tx, y_test)
+             print('loda tx binary logistic regression score, split {}: {}'.format(j, logistic_score), 
+                   file=open("results.txt", "a+"))
+             '''
+             
+             # Test anomaly detection score on linear model
+             # plot AUC (start general, then move to indiv classes?)
+             test_target      = test_latent_df['label']
+             
+             scores, y_actual = test_results(kn_unkn_test_loda_tx, w, test_target, anom_classes)
+             #for i, pred in enumerate(scores):
+                 #print('{}  {}'.format(pred, y_actual[i]))
+             # IF BAD, reevaluate LODA initialization
+             print(y_actual)
+             print('AUROC_{}_lr{}_sd{}: {}\n'.format(j, i, SEED, roc_auc_score(y_actual, scores)), file=open("results.txt", "a+"))
+             plot_save_auroc(y_actual, scores, j, learning_rates, i)
     
     # NEXT: Run on all 5 anomaly splits.
     

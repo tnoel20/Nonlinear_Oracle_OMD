@@ -127,11 +127,6 @@ AUROC_4: 0.7145835833333334
 -----------------------------------------------------------
 
 
-
-binary logistic regression score, split 0: 0.6882
-loda tx binary logistic regression score, split 0: 0.6882
-AUROC_0: 0.5343520416666667
-
 binary logistic regression score, split 0: 0.6882
 loda tx binary logistic regression score, split 0: 0.6882
 AUROC_0: 0.5343520416666667
@@ -151,4 +146,100 @@ AUROC_3: 0.6553317291666666
 binary logistic regression score, split 4: 0.7418
 loda tx binary logistic regression score, split 4: 0.7418
 AUROC_4: 0.7145835833333334
+
+
+-----------------------------------------------------------
+--------- On last 4 ---------------------------------------
+-----------------------------------------------------------
+
+
+binary logistic regression score, split 1: 0.7537
+loda tx binary logistic regression score, split 1: 0.7537
+AUROC_1: 0.727226625
+
+binary logistic regression score, split 2: 0.7746
+loda tx binary logistic regression score, split 2: 0.7746
+AUROC_2: 0.7549932916666666
+
+binary logistic regression score, split 3: 0.7614
+loda tx binary logistic regression score, split 3: 0.7614
+AUROC_3: 0.6949630833333333
+
+binary logistic regression score, split 4: 0.7418
+loda tx binary logistic regression score, split 4: 0.7418
+AUROC_4: 0.7446053333333333
+
+-------------------------------------------------------------
+---------- eta sweep ----------------------------------------
+-------------------------------------------------------------
+
+AUROC_0_lr0_sd0: 0.37457370833333337
+
+AUROC_1_lr0_sd0: 0.5746504166666666
+
+AUROC_2_lr0_sd0: 0.5489520416666667
+
+AUROC_3_lr0_sd0: 0.5353740416666667
+
+AUROC_4_lr0_sd0: 0.6026249166666667
+
+AUROC_0_lr1_sd0: 0.5254882916666666
+
+AUROC_1_lr1_sd0: 0.5437587083333333
+
+AUROC_2_lr1_sd0: 0.6558280416666666
+
+AUROC_3_lr1_sd0: 0.5341695
+
+AUROC_4_lr1_sd0: 0.7110686666666666
+
+AUROC_0_lr2_sd0: 0.57741325
+
+AUROC_1_lr2_sd0: 0.6632472083333333
+
+AUROC_2_lr2_sd0: 0.7485220416666666
+
+AUROC_3_lr2_sd0: 0.6549757916666666
+
+AUROC_4_lr2_sd0: 0.733199375
+
+AUROC_0_lr3_sd0: 0.61032175
+
+AUROC_1_lr3_sd0: 0.7331498124999999
+
+AUROC_2_lr3_sd0: 0.7469168958333334
+
+AUROC_3_lr3_sd0: 0.6805047916666666
+
+AUROC_4_lr3_sd0: 0.7271517916666667
+
+AUROC_0_lr4_sd0: 0.6448555208333333
+
+AUROC_1_lr4_sd0: 0.7459873124999999
+
+AUROC_2_lr4_sd0: 0.7633791458333333
+
+AUROC_3_lr4_sd0: 0.71271975
+
+AUROC_4_lr4_sd0: 0.7502660625
+
+AUROC_0_lr5_sd0: 0.6815197916666667
+
+AUROC_1_lr5_sd0: 0.75685625
+
+AUROC_2_lr5_sd0: 0.7799413541666667
+
+AUROC_3_lr5_sd0: 0.7318588333333333
+
+AUROC_4_lr5_sd0: 0.7648976249999999
+
+AUROC_0_lr6_sd0: 0.6913017083333333
+
+AUROC_1_lr6_sd0: 0.7614397916666666
+
+AUROC_2_lr6_sd0: 0.7816517708333333
+
+AUROC_3_lr6_sd0: 0.7361071458333334
+
+AUROC_4_lr6_sd0: 0.7639518541666667
 
