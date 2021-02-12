@@ -73,6 +73,56 @@ def load_data(split=0, normalize=False):
     return (kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test)
 
 
+def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, learning_rate=1e-2):
+    '''
+    Training a linear anomaly detector
+
+    Originally developed to train a linear anomaly
+    detector on latent representations of labeled images
+
+    Parameters
+    ----------
+    data: data instances packed into a dataframe
+
+    anom_classes: a list of classes corresponding
+                  to anomaly classification (should
+                  be a list of unique strings)
+    '''
+    N = len(latent_data)
+    T = N
+    labels = latent_data['label'].copy()
+    labels = labels.to_numpy().reshape((len(labels),1))
+    #theta, clf = get_weight_prior(train_latent_data)
+    #theta = np.reshape(theta, (len(theta), 1))
+    theta = weight_prior.copy()    
+
+    loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(split)) 
+ 
+    if os.path.isfile(loda_tx_val_filename):
+        with open(loda_tx_val_filename, 'rb') as f:
+            data = np.load(f)
+    else:
+        data = loda_transform(clf_omd, latent_data)
+        np.save(loda_tx_val_filename, data) 
+
+    aucs = []    
+
+    for i in range(T):
+        w = get_nearest_w(theta)
+        d_anom, idx = get_max_anomaly_score(w, data)
+        y = get_feedback(labels[idx,0], anom_classes)
+        data   = np.delete(data, idx, axis=0)
+        labels = np.delete(labels, idx, axis=0)
+        theta = theta + learning_rate*y*d_anom
+        
+        # See how the AUC is doing over all iterations
+        scores, y_actual = test_results(loda_tx_test, w, test_classes, anom_classes)
+        aucs.append(roc_auc_score(y_actual, scores))
+    
+    print("AUC OMD Done")
+    return np.array([i for i in range(T)]), np.array(aucs), y_actual 
+
+
 def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2):
     '''
     Training a linear anomaly detector
@@ -92,7 +142,9 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
     T = N
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
-    theta, clf = get_weight_prior(train_latent_data)
+    wprior, clf = get_weight_prior(train_latent_data)
+    wprior = np.reshape(wprior, (len(wprior), 1))
+    theta = wprior.copy()
     theta = np.reshape(theta, (len(theta), 1))
     #data = loda_transform(clf, latent_data)
     
@@ -131,7 +183,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
         #print(i)
     #print('w: {}'.format(w))
     print("OMD Done")
-    return w, clf
+    return w, clf, wprior
 
 
 def loda_transform(loda_clf, data_df):
@@ -525,7 +577,7 @@ def main():
         [4, 5, 6, 9],
     ]
     
-    learning_rates = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3]
+    learning_rates = [0.3] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
     NUM_LR = len(learning_rates)
     NUM_SPLITS = len(splits)
     
@@ -594,9 +646,10 @@ def main():
                  val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
                  val_latent_df.to_csv(Z_val_filename, index=False)
          
-    	
+	
              # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd = omd(train_latent_df, val_latent_df, anom_classes, j, learning_rate=learning_rates[i])
+             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, learning_rate=learning_rates[i])
+
          	
              # Construct test set and embed test examples
              if os.path.isfile(Z_test_filename):
@@ -670,13 +723,36 @@ def main():
              # plot AUC (start general, then move to indiv classes?)
              test_target      = test_latent_df['label']
              
+             # Note that the train_latent_df is used for determining the initial weight vector
+             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, 
+                                                kn_unkn_test_loda_tx, test_target, wprior, learning_rate=learning_rates[i])
+            
+             # Write results to file for further analysis (anomaly isolation, etc.)
+             auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
+             with open(auc_omd_iters_filename, 'wb') as f:
+                 np.save(f, T_vec)
+                 np.save(f, auc_vec)
+                 np.save(f, oracle_labels)
+ 
+             # Plot(T_vec, auc_vec) where anomalies are differentiated from
+             # nominals; but... let's just start with a basic AUC v. Iter plot
+             
+             
+             plt.figure(j+i*j)
+             plt.plot(T_vec, auc_vec)
+             plt.xlabel("OMD Iteration")
+             plt.ylabel("AUC")
+             plt.title("CIFAR 10, Split {}".format(j))             
+             plt.savefig("auc_itrns_{}_lr{}.png".format(j,i))
+
              scores, y_actual = test_results(kn_unkn_test_loda_tx, w, test_target, anom_classes)
+
              #for i, pred in enumerate(scores):
                  #print('{}  {}'.format(pred, y_actual[i]))
              # IF BAD, reevaluate LODA initialization
              print(y_actual)
              print('AUROC_{}_lr{}_sd{}: {}\n'.format(j, i, SEED, roc_auc_score(y_actual, scores)), file=open("results.txt", "a+"))
-             plot_save_auroc(y_actual, scores, j, learning_rates, i)
+             #plot_save_auroc(y_actual, scores, j, learning_rates, i)
     
     # NEXT: Run on all 5 anomaly splits.
     
