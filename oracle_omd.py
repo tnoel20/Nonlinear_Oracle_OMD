@@ -90,6 +90,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     '''
     N = len(latent_data)
     T = N
+    epochs = 5
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     #theta, clf = get_weight_prior(train_latent_data)
@@ -100,27 +101,40 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
  
     if os.path.isfile(loda_tx_val_filename):
         with open(loda_tx_val_filename, 'rb') as f:
-            data = np.load(f)
+            data_orig = np.load(f)
     else:
-        data = loda_transform(clf_omd, latent_data)
-        np.save(loda_tx_val_filename, data) 
+        data_orig = loda_transform(clf_omd, latent_data)
+        np.save(loda_tx_val_filename, data_orig) 
 
+    data = data_orig.copy()
     aucs = []    
+    iter_labels = []   
+ 
+    for k in range(epochs):
+        for i in range(T):
+            w = get_nearest_w(theta)
+            d_anom, idx = get_max_anomaly_score(w, data)
+            y = get_feedback(labels[idx,0], anom_classes)
+         
+            # Associating nom/anom labels with each iteration
+            iter_labels.append(y)
+     
+            data   = np.delete(data, idx, axis=0)
+            labels = np.delete(labels, idx, axis=0)
+            theta = theta + learning_rate*y*d_anom
+            
+            # See how the AUC is doing over all iterations
+            scores, y_actual = test_results(loda_tx_test, w, test_classes, anom_classes)
+            aucs.append(roc_auc_score(y_actual, scores))
 
-    for i in range(T):
-        w = get_nearest_w(theta)
-        d_anom, idx = get_max_anomaly_score(w, data)
-        y = get_feedback(labels[idx,0], anom_classes)
-        data   = np.delete(data, idx, axis=0)
-        labels = np.delete(labels, idx, axis=0)
-        theta = theta + learning_rate*y*d_anom
-        
-        # See how the AUC is doing over all iterations
-        scores, y_actual = test_results(loda_tx_test, w, test_classes, anom_classes)
-        aucs.append(roc_auc_score(y_actual, scores))
-    
+        # Reset data and labels to run over all data again
+        labels = latent_data['label'].copy()
+        labels = labels.to_numpy().reshape((len(labels),1))
+        data = data_orig.copy()
+            
+
     print("AUC OMD Done")
-    return np.array([i for i in range(T)]), np.array(aucs), y_actual 
+    return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(iter_labels) 
 
 
 def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2):
@@ -139,6 +153,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
                   be a list of unique strings)
     '''
     N = len(latent_data)
+    epochs = 5
     T = N
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -146,42 +161,32 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
     wprior = np.reshape(wprior, (len(wprior), 1))
     theta = wprior.copy()
     theta = np.reshape(theta, (len(theta), 1))
-    #data = loda_transform(clf, latent_data)
     
     loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(split)) 
  
     if os.path.isfile(loda_tx_val_filename):
         with open(loda_tx_val_filename, 'rb') as f:
-            data = np.load(f)
+            data_orig = np.load(f)
     else:
-        data = loda_transform(clf_omd, latent_data)
-        np.save(loda_tx_val_filename, data) 
+        data_orig = loda_transform(clf_omd, latent_data)
+        np.save(loda_tx_val_filename, data_orig) 
 
-    #print('Weight Prior: {}'.format(theta))
-    # Note that this is usually implemented as an
-    # online algorithm so number of time steps (steps
-    # of this outer loop) are usually ambiguous. Here
-    # we have a dataset of some fixed size, so we
-    # will start by running a single epoch over the
-    # dataset
-    for i in range(T):
-        w = get_nearest_w(theta)
-        #w = theta
-        d_anom, idx = get_max_anomaly_score(w, data)
-        y = get_feedback(labels[idx,0], anom_classes)
-        # TAG
-        #data.drop(data.index[idx])
-        data   = np.delete(data, idx, axis=0)
-        labels = np.delete(labels, idx, axis=0) # MIGHT NEED TO SPECIFY AXIS 
-        # linear loss function
-        # loss = -y*np.dot(w,d_anom)
-        #print('y: {}'.format(y))
-        # TODO: Let sign be positive 
-        theta = theta + learning_rate*y*d_anom#- learning_rate*y*d_anom
-        #if i == T-1:
-        #print('theta: {}'.format(theta))
-        #print(i)
-    #print('w: {}'.format(w))
+    data = data_orig.copy()
+
+    for k in range(epochs):
+        for i in range(T):
+            w = get_nearest_w(theta)
+            d_anom, idx = get_max_anomaly_score(w, data) # Could make this more generic strategy function
+            y = get_feedback(labels[idx,0], anom_classes)
+            data   = np.delete(data, idx, axis=0)
+            labels = np.delete(labels, idx, axis=0) 
+            theta = theta + learning_rate*y*d_anom
+    
+        # Reset data and labels to continue learning
+        labels = latent_data['label'].copy()
+        labels = labels.to_numpy().reshape((len(labels),1))
+        data = data_orig.copy()   
+ 
     print("OMD Done")
     return w, clf, wprior
 
