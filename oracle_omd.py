@@ -582,7 +582,7 @@ def main():
         [4, 5, 6, 9],
     ]
     
-    learning_rates = [0.3] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
+    learning_rates = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1] #, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
     NUM_LR = len(learning_rates)
     NUM_SPLITS = len(splits)
     
@@ -747,7 +747,7 @@ def main():
              plt.plot(T_vec, auc_vec)
              plt.xlabel("OMD Iteration")
              plt.ylabel("AUC")
-             plt.title("CIFAR 10, Split {}".format(j))             
+             plt.title("CIFAR 10, Split {}, lr {}".format(j,learning_rates[i]))             
              plt.savefig("auc_itrns_{}_lr{}.png".format(j,i))
 
              scores, y_actual = test_results(kn_unkn_test_loda_tx, w, test_target, anom_classes)
