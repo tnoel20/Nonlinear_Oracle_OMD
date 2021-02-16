@@ -743,7 +743,7 @@ def main():
              # nominals; but... let's just start with a basic AUC v. Iter plot
              
              
-             plt.figure(j+i*j)
+             plt.figure(j+i*(j+1))
              plt.plot(T_vec, auc_vec)
              plt.xlabel("OMD Iteration")
              plt.ylabel("AUC")
