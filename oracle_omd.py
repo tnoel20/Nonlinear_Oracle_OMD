@@ -582,7 +582,7 @@ def main():
         [4, 5, 6, 9],
     ]
     
-    learning_rates = [0.003, 0.01, 0.03, 0.1] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1] #, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
+    learning_rates = [0.03, 0.1] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1] #, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
     NUM_LR = len(learning_rates)
     NUM_SPLITS = len(splits)
     
@@ -743,7 +743,7 @@ def main():
              # nominals; but... let's just start with a basic AUC v. Iter plot
              
              
-             plt.figure(j+i*(j+1))
+             plt.figure((j+1)+i*(j+1))
              plt.plot(T_vec, auc_vec)
              plt.xlabel("OMD Iteration")
              plt.ylabel("AUC")
