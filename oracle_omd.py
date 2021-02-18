@@ -582,10 +582,10 @@ def main():
         [4, 5, 6, 9],
     ]
     
-    learning_rates = [0.03, 0.1] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1] #, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
+    learning_rates = [0.1] #[0.0003, 0.001, 0.003, 0.01, 0.03, 0.1] #, 0.3, 0.5, 0.7, 1, 1.2, 1.5]
     NUM_LR = len(learning_rates)
     NUM_SPLITS = len(splits)
-    
+    assert(NUM_LR == 1)
     for i in range(NUM_LR):
         # Temporary, had to specify last splits because all 5 produce files
         # that are collectively too big for my home folder in the hpc
@@ -727,10 +727,29 @@ def main():
              # Test anomaly detection score on linear model
              # plot AUC (start general, then move to indiv classes?)
              test_target      = test_latent_df['label']
-             
+   
+             # BASELINE CALCULATIONS 
+             # Calculating baseline performance of LODA model on test set
+             test_bl_target = test_target.to_numpy()
+             test_np_z = test_latent_df.drop(columns=['label']).to_numpy()
+             assert(test_np_z.shape[0] == len(test_bl_target))
+             bl_scores = clf_omd.decision_function(test_np_z)
+             num_test_ex = len(test_np_z)
+             anom_nom_labels = []
+             for k in range(num_test_ex):
+                 anom_nom_labels.append(get_feedback(test_bl_target[k], anom_classes))
+             anom_nom_labels = np.array(anom_nom_labels)
+             #baseline_acc = np.mean(pred_test_results, anom_nom_labels)
+             bl_auc = roc_auc_score(anom_nom_labels, bl_scores)
+             with open('loda_baseline.txt', 'a+') as f:
+                 f.write('Split {} LODA AUROC baseline: {}'.format(j, bl_auc)) 
+             # END BASELINE CALCULATIONS
+            
+ 
+             #X = data_df.drop(columns=['label'])
+         
              # Note that the train_latent_df is used for determining the initial weight vector
-             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, 
-                                                kn_unkn_test_loda_tx, test_target, wprior, learning_rate=learning_rates[i])
+             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, learning_rate=learning_rates[i])
             
              # Write results to file for further analysis (anomaly isolation, etc.)
              auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
