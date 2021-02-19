@@ -73,7 +73,7 @@ def load_data(split=0, normalize=False):
     return (kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test)
 
 
-def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, learning_rate=1e-2):
+def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, strategy="max", learning_rate=1e-2):
     '''
     Training a linear anomaly detector
 
@@ -90,7 +90,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     '''
     N = len(latent_data)
     T = N
-    epochs = 5
+    epochs = 1
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     #theta, clf = get_weight_prior(train_latent_data)
@@ -113,7 +113,14 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     for k in range(epochs):
         for i in range(T):
             w = get_nearest_w(theta)
-            d_anom, idx = get_max_anomaly_score(w, data)
+            if strategy == "max":
+                # d_anom is data[idx] reshaped to (len(data[idx]),1)
+                d_anom, idx = get_max_anomaly_score(w, data)
+            elif strategy == "random":
+                # assign d_anom, idx appropriately
+                idx = np.random.randint(len(data))
+                d_anom = data[idx].reshape((len(data[idx]),1))
+                assert(idx < len(data) and idx >= 0) 
             y = get_feedback(labels[idx,0], anom_classes)
          
             # Associating nom/anom labels with each iteration
@@ -137,7 +144,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(iter_labels) 
 
 
-def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2):
+def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", learning_rate=1e-2):
     '''
     Training a linear anomaly detector
 
@@ -153,7 +160,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    epochs = 5
+    epochs = 1
     T = N
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -176,7 +183,14 @@ def omd(train_latent_data, latent_data, anom_classes, split, learning_rate=1e-2)
     for k in range(epochs):
         for i in range(T):
             w = get_nearest_w(theta)
-            d_anom, idx = get_max_anomaly_score(w, data) # Could make this more generic strategy function
+            # d_anom is data[idx] reshaped to (len(data[idx]),1)
+            if strategy == "max":
+                d_anom, idx = get_max_anomaly_score(w, data) # Could make this more generic strategy function
+            elif strategy == "random":
+                # assign d_anom, idx appropriately
+                idx = np.random.randint(len(data))
+                d_anom = data[idx].reshape((len(data[idx]),1))
+                assert(idx < len(data) and idx >= 0) 
             y = get_feedback(labels[idx,0], anom_classes)
             data   = np.delete(data, idx, axis=0)
             labels = np.delete(labels, idx, axis=0) 
@@ -592,7 +606,7 @@ def main():
         for j in range(NUM_SPLITS): 
             
              # To revert, replace j with SPLIT
-             anom_classes = [CIFAR_CLASSES[i] for i in splits[SPLIT]]
+             anom_classes = [CIFAR_CLASSES[i] for k in splits[SPLIT]]
              # DEBUG
              #print(anom_classes)
              # GUBED
@@ -653,7 +667,7 @@ def main():
          
 	
              # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, learning_rate=learning_rates[i])
+             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="random", learning_rate=learning_rates[i])
 
          	
              # Construct test set and embed test examples
@@ -663,14 +677,14 @@ def main():
                  test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
                  test_latent_df.to_csv(Z_test_filename, index=False)
          	
-             '''     
+                 
              # Logistic regression test
              X_val = val_latent_df.drop(columns=['label'])
              X_val = X_val.values
              y_val = val_latent_df['label'].copy()
              len_val = len(y_val)
-             for i in range(len_val):
-                 y_val.iloc[i] = get_feedback(y_val.iloc[i], anom_classes)
+             for k in range(len_val):
+                 y_val.iloc[k] = get_feedback(y_val.iloc[k], anom_classes)
              y_val = y_val.values
              y_val = y_val.astype('int')
              clf = LogisticRegression(max_iter=1000).fit(X_val, y_val)
@@ -680,15 +694,15 @@ def main():
              X_test = X_test.values
              y_test = test_latent_df['label'].copy()
              len_test = len(y_test)
-             for i in range(len_test):
-                 y_test.iloc[i] = get_feedback(y_test.iloc[i], anom_classes)
+             for k in range(len_test):
+                 y_test.iloc[k] = get_feedback(y_test.iloc[k], anom_classes)
              y_test = y_test.values
              y_test = y_test.astype('int')
              # TODO binarize labels
              logistic_score = clf.score(X_test, y_test)
-             print('binary logistic regression score, split {}: {}'.format(j, logistic_score), 
+             print('latent binary logistic regression score, split {}: {}'.format(j, logistic_score), 
                    file=open("results.txt", "a+"))
-             
+             '''
              # TODO: Compute Binary Logistic regression scores on LODA transforms
              # Put validation data through loda transform, then pass it to
              # regression, then score the classifier on the LODA transformed test
@@ -703,10 +717,10 @@ def main():
              else:
                  kn_unkn_val_loda_tx = loda_transform(clf_omd, val_latent_df)
                  np.save(loda_tx_val_filename, kn_unkn_val_loda_tx) 
-             ''' 
+              
              # Train a binary logistic regression classifier on the loda-tx'd latent representations    
              clf_loda_repr       = LogisticRegression(max_iter=1000).fit(kn_unkn_val_loda_tx, y_val)
-             '''
+             
              # Specify path to save loda-transformed latent representation of the test set
              loda_tx_test_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_test_{}.npy'.format(j)) 
      
@@ -717,12 +731,11 @@ def main():
                  kn_unkn_test_loda_tx = loda_transform(clf_omd, test_latent_df)
                  np.save(loda_tx_test_filename, kn_unkn_test_loda_tx) 
              
-             '''
+             # LODA REP LOGISTIC REGRESSION
              # See how the classifier performs
              loda_tx_logistic_score = clf_loda_repr.score(kn_unkn_test_loda_tx, y_test)
              print('loda tx binary logistic regression score, split {}: {}'.format(j, logistic_score), 
                    file=open("results.txt", "a+"))
-             '''
              
              # Test anomaly detection score on linear model
              # plot AUC (start general, then move to indiv classes?)
@@ -749,7 +762,7 @@ def main():
              #X = data_df.drop(columns=['label'])
          
              # Note that the train_latent_df is used for determining the initial weight vector
-             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, learning_rate=learning_rates[i])
+             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="random", learning_rate=learning_rates[i])
             
              # Write results to file for further analysis (anomaly isolation, etc.)
              auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
