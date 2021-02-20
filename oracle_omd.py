@@ -734,7 +734,7 @@ def main():
              # LODA REP LOGISTIC REGRESSION
              # See how the classifier performs
              loda_tx_logistic_score = clf_loda_repr.score(kn_unkn_test_loda_tx, y_test)
-             print('loda tx binary logistic regression score, split {}: {}'.format(j, logistic_score), 
+             print('loda tx binary logistic regression score, split {}: {}'.format(j, loda_tx_logistic_score), 
                    file=open("results.txt", "a+"))
              
              # Test anomaly detection score on linear model
