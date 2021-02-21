@@ -110,6 +110,9 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     aucs = []    
     iter_labels = []   
  
+    aucs_anom = []
+    anom_iters = []
+
     for k in range(epochs):
         for i in range(T):
             w = get_nearest_w(theta)
@@ -132,7 +135,13 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
             
             # See how the AUC is doing over all iterations
             scores, y_actual = test_results(loda_tx_test, w, test_classes, anom_classes)
-            aucs.append(roc_auc_score(y_actual, scores))
+            auc = roc_auc_score(y_actual, scores)
+            aucs.append(auc)
+
+            # If current example is anomalous, then add it to auc anomaly curve
+            if y == 1:
+                anom_iters.append(k*T+i)
+                aucs_anom.append(auc)
 
         # Reset data and labels to run over all data again
         labels = latent_data['label'].copy()
@@ -141,7 +150,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
             
 
     print("AUC OMD Done")
-    return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(iter_labels) 
+    return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(anom_iters), np.array(aucs_anom), np.array(iter_labels) 
 
 
 def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", learning_rate=1e-2):
@@ -762,7 +771,7 @@ def main():
              #X = data_df.drop(columns=['label'])
          
              # Note that the train_latent_df is used for determining the initial weight vector
-             T_vec, auc_vec, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="random", learning_rate=learning_rates[i])
+             T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="random", learning_rate=learning_rates[i])
             
              # Write results to file for further analysis (anomaly isolation, etc.)
              auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
@@ -775,8 +784,10 @@ def main():
              # nominals; but... let's just start with a basic AUC v. Iter plot
              
              
-             plt.figure((j+1)+i*(j+1))
+             plt.figure()
              plt.plot(T_vec, auc_vec)
+             plt.plot(anom_iters, anom_auc)
+             plt.legend(["All", "Anom"], loc="best")
              plt.xlabel("OMD Iteration")
              plt.ylabel("AUC")
              plt.title("CIFAR 10, Split {}, lr {}".format(j,learning_rates[i]))             
