@@ -585,3 +585,23 @@ latent binary logistic regression score, split 4: 0.6977
 loda tx binary logistic regression score, split 4: 0.6901
 AUROC_4_lr0_sd0: 0.7230735208333334
 
+latent binary logistic regression score, split 0: 0.6882
+loda tx binary logistic regression score, split 0: 0.6782
+AUROC_0_lr0_sd0: 0.6770953125000001
+
+latent binary logistic regression score, split 1: 0.7212
+loda tx binary logistic regression score, split 1: 0.6958
+AUROC_1_lr0_sd0: 0.6662501458333333
+
+latent binary logistic regression score, split 2: 0.7135
+loda tx binary logistic regression score, split 2: 0.7076
+AUROC_2_lr0_sd0: 0.7159242916666667
+
+latent binary logistic regression score, split 3: 0.6918
+loda tx binary logistic regression score, split 3: 0.6758
+AUROC_3_lr0_sd0: 0.644459875
+
+latent binary logistic regression score, split 4: 0.6977
+loda tx binary logistic regression score, split 4: 0.6901
+AUROC_4_lr0_sd0: 0.7268754791666667
+
