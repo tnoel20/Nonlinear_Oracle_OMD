@@ -90,7 +90,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     '''
     N = len(latent_data)
     T = N
-    epochs = 1
+    epochs = 4
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     #theta, clf = get_weight_prior(train_latent_data)
@@ -169,7 +169,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", lea
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    epochs = 1
+    epochs = 4
     T = N
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
