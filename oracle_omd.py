@@ -89,7 +89,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    T = N
+    T = N//5
     epochs = 1
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -170,7 +170,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", lea
     '''
     N = len(latent_data)
     epochs = 1
-    T = N
+    T = N//5
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     wprior, clf = get_weight_prior(train_latent_data)
@@ -184,7 +184,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", lea
         with open(loda_tx_val_filename, 'rb') as f:
             data_orig = np.load(f)
     else:
-        data_orig = loda_transform(clf_omd, latent_data)
+        data_orig = loda_transform(clf, latent_data)
         np.save(loda_tx_val_filename, data_orig) 
 
     data = data_orig.copy()
@@ -789,8 +789,8 @@ def main():
              
              
              plt.figure()
-             plt.plot(T_vec, auc_vec)
-             plt.plot(anom_iters, anom_auc)
+             plt.plot(T_vec, auc_vec, 'm.')
+             plt.plot(anom_iters, anom_auc, 'g.')
              plt.legend(["All", "Anom"], loc="best")
              plt.xlabel("OMD Iteration")
              plt.ylabel("AUC")
