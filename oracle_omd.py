@@ -89,7 +89,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    T = 20 #N
+    T = N//5
     epochs = 1
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -170,7 +170,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
     '''
     N = len(latent_data)
     epochs = 1
-    T = 20 #N
+    T = N//5
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     wprior, clf = get_weight_prior(train_latent_data)
