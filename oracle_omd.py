@@ -707,7 +707,7 @@ def main():
          
 	
              # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="max", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
+             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="random", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
 
          	
          	
@@ -788,7 +788,7 @@ def main():
              #X = data_df.drop(columns=['label'])
          
              # Note that the train_latent_df is used for determining the initial weight vector
-             T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="max", learning_rate=learning_rates[i])
+             T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="random", learning_rate=learning_rates[i])
             
              # Write results to file for further analysis (anomaly isolation, etc.)
              auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
