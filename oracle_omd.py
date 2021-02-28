@@ -89,7 +89,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    T = N//5
+    T = 20 #N
     epochs = 1
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -153,7 +153,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
     return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(anom_iters), np.array(aucs_anom), np.array(iter_labels) 
 
 
-def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", learning_rate=1e-2):
+def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", test_latent_data=None, learning_rate=1e-2):
     '''
     Training a linear anomaly detector
 
@@ -170,10 +170,15 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", lea
     '''
     N = len(latent_data)
     epochs = 1
-    T = N//5
+    T = 20 #N
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     wprior, clf = get_weight_prior(train_latent_data)
+
+    # Print out classifier's AUC score
+    if test_latent_data is not None:
+        print_baseline_score(clf, split, test_latent_data, anom_classes)
+
     wprior = np.reshape(wprior, (len(wprior), 1))
     theta = wprior.copy()
     theta = np.reshape(theta, (len(theta), 1))
@@ -212,6 +217,25 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", lea
  
     print("OMD Done")
     return w, clf, wprior
+
+
+def print_baseline_score(clf, split, test_data, anom_classes):
+    ''' Takes in a LODA classifier and latent test data and computes/prints AUROC '''
+    labels = test_data['label'].copy()
+    labels = labels.to_numpy().reshape((len(labels),1))
+
+    test_np_z = test_data.drop(columns=['label']).to_numpy()
+    assert(test_np_z.shape[0] == len(labels))
+    bl_scores = clf.decision_function(test_np_z)
+    num_test_ex = len(test_np_z)
+    anom_nom_labels = []
+    for k in range(num_test_ex):
+        anom_nom_labels.append(get_feedback(labels[k], anom_classes))
+    anom_nom_labels = np.array(anom_nom_labels)
+    #baseline_acc = np.mean(pred_test_results, anom_nom_labels)
+    bl_auc = roc_auc_score(anom_nom_labels, bl_scores)
+    with open('loda_baseline.txt', 'a+') as f:
+        f.write('Split {} LODA AUROC fresh baseline: {}'.format(split, bl_auc)) 
 
 
 def loda_transform(loda_clf, data_df):
@@ -673,18 +697,19 @@ def main():
              else:
                  val_latent_df = construct_latent_set(kn_classifier, kn_val, unkn_val)
                  val_latent_df.to_csv(Z_val_filename, index=False)
-         
-	
-             # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="max", learning_rate=learning_rates[i])
-
-         	
+             
              # Construct test set and embed test examples
              if os.path.isfile(Z_test_filename):
                  test_latent_df = pd.read_csv(Z_test_filename)
              else:   
                  test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
                  test_latent_df.to_csv(Z_test_filename, index=False)
+         
+	
+             # Note that the train_latent_df is used for determining the initial weight vector
+             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="max", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
+
+         	
          	
              '''
              # Logistic regression test
@@ -753,24 +778,12 @@ def main():
              # Test anomaly detection score on linear model
              # plot AUC (start general, then move to indiv classes?)
              test_target      = test_latent_df['label']
-   
+  
+             ''' 
              # BASELINE CALCULATIONS 
              # Calculating baseline performance of LODA model on test set
-             test_bl_target = test_target.to_numpy()
-             test_np_z = test_latent_df.drop(columns=['label']).to_numpy()
-             assert(test_np_z.shape[0] == len(test_bl_target))
-             bl_scores = clf_omd.decision_function(test_np_z)
-             num_test_ex = len(test_np_z)
-             anom_nom_labels = []
-             for k in range(num_test_ex):
-                 anom_nom_labels.append(get_feedback(test_bl_target[k], anom_classes))
-             anom_nom_labels = np.array(anom_nom_labels)
-             #baseline_acc = np.mean(pred_test_results, anom_nom_labels)
-             bl_auc = roc_auc_score(anom_nom_labels, bl_scores)
-             with open('loda_baseline.txt', 'a+') as f:
-                 f.write('Split {} LODA AUROC baseline: {}'.format(j, bl_auc)) 
              # END BASELINE CALCULATIONS
-            
+             '''
  
              #X = data_df.drop(columns=['label'])
          
