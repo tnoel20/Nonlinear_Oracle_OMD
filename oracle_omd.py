@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from pyod.models.loda import LODA
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.cluster import KMeans
 from oc_data_load import CIFAR10_Data
 #from vanilla_ae import get_vanilla_ae
 from classifier import get_resnet_18_classifier
@@ -73,7 +74,7 @@ def load_data(split=0, normalize=False):
     return (kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test)
 
 
-def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, strategy="max", learning_rate=1e-2):
+def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, kmeans, strategy="max", learning_rate=1e-2):
     '''
     Training a linear anomaly detector
 
@@ -89,7 +90,8 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
                   be a list of unique strings)
     '''
     N = len(latent_data)
-    T = N//5
+    T = N
+    num_clust = 10
     epochs = 1
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
@@ -107,6 +109,11 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
         np.save(loda_tx_val_filename, data_orig) 
 
     data = data_orig.copy()
+
+    ###
+    # kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(data)
+    clust_labels = kmeans.labels_.copy()
+
     aucs = []    
     iter_labels = []   
  
@@ -123,12 +130,18 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
                 # assign d_anom, idx appropriately
                 idx = np.random.randint(len(data))
                 d_anom = data[idx].reshape((len(data[idx]),1))
-                assert(idx < len(data) and idx >= 0) 
+                assert(idx < len(data) and idx >= 0)
+            elif strategy == "cluster_rr":
+                idx = round_robin_pick(clust_labels, i, data, num_clust)
+                assert(idx != -1)
+                d_anom = data[idx].reshape((len(data[idx]),1))
+ 
             y = get_feedback(labels[idx,0], anom_classes)
          
             # Associating nom/anom labels with each iteration
             iter_labels.append(y)
      
+            clust_labels = np.delete(clust_labels, idx, axis=0)
             data   = np.delete(data, idx, axis=0)
             labels = np.delete(labels, idx, axis=0)
             theta = theta + learning_rate*y*d_anom
@@ -147,6 +160,7 @@ def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, 
         labels = latent_data['label'].copy()
         labels = labels.to_numpy().reshape((len(labels),1))
         data = data_orig.copy()
+        clust_labels = kmeans.labels_.copy()
             
 
     print("AUC OMD Done")
@@ -170,7 +184,8 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
     '''
     N = len(latent_data)
     epochs = 1
-    T = N//5
+    T = N
+    num_clust = 10
     labels = latent_data['label'].copy()
     labels = labels.to_numpy().reshape((len(labels),1))
     wprior, clf = get_weight_prior(train_latent_data)
@@ -194,6 +209,14 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
 
     data = data_orig.copy()
 
+    # TODO: if strategy is round robin, train k-means model
+    #       and compute cluster label vector.
+    #
+    # Build schedule (either round robin, or random class)
+    kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(data)
+    # this might need to be copied
+    clust_labels = kmeans.labels_.copy() 
+
     for k in range(epochs):
         for i in range(T):
             w = get_nearest_w(theta)
@@ -204,8 +227,36 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
                 # assign d_anom, idx appropriately
                 idx = np.random.randint(len(data))
                 d_anom = data[idx].reshape((len(data[idx]),1))
-                assert(idx < len(data) and idx >= 0) 
+                assert(idx < len(data) and idx >= 0)
+            elif strategy == "cluster_rr":
+                # WRITE A F'N THAT DOES THIS (call it round_robin_pick maybe)
+                #
+                # Input:  cluster label vector, i, data, n (the # classes)
+                # Output: idx, d_anom
+                #
+                # 1) Calc class index for this iter (using i mod n formula, where n is number of classes)
+                # 2) if such an element exists, determine idx and d_anom by picking the next example that has class index
+                # 3) Else if no more elements with class index
+                #        class_index++
+                #        candidate_found = false
+                #        # Not sure if first check is necessary...
+                #        while (class_index != i mod n) and (candidate_found = false)
+                #            if example exists with class_index:
+                #                candidate_found = true
+                #                idx is assigned the candidate's index
+                #                d_anom is assigned to the candidate
+                #            else:
+                #                class_index++
+                #
+                # Need to think about how to transfer relevant information to OMD_Test as well
+                print(i)
+                #if i == 9019:
+                #    import pdb; pdb.set_trace()
+                idx = round_robin_pick(clust_labels, i, data, num_clust)
+                assert(idx != -1)
+                d_anom = data[idx].reshape((len(data[idx]),1))
             y = get_feedback(labels[idx,0], anom_classes)
+            clust_labels = np.delete(clust_labels, idx, axis=0)
             data   = np.delete(data, idx, axis=0)
             labels = np.delete(labels, idx, axis=0) 
             theta = theta + learning_rate*y*d_anom
@@ -213,10 +264,49 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
         # Reset data and labels to continue learning
         labels = latent_data['label'].copy()
         labels = labels.to_numpy().reshape((len(labels),1))
-        data = data_orig.copy()   
+        data = data_orig.copy()
+        clust_labels = kmeans.labels_.copy()   
  
     print("OMD Done")
-    return w, clf, wprior
+    return w, clf, wprior, kmeans
+
+
+
+def round_robin_pick(labels, omd_idx, data, num_clust):
+    nom_class_num = omd_idx % num_clust
+    class_num = nom_class_num
+    #l_idx = 0
+    #index_found = False
+    # Pick next example in labels that has this class delegation    
+    #while l_idx < len(data) and not index_found:
+    #    if data[l_idx] == class_num:
+    #        idx = l_idx
+    #        d_anom = data[l_idx].reshape((len(data[idx]),1))
+    #        idx_found = True
+    #    l_idx += 1
+
+    idx_found, idx = entry_find(class_num, labels)
+    class_num += 1
+    # If no instances of nominal class remain (shouldn't happen... just being safe)
+    while not idx_found and class_num != nom_class_num:
+        idx_found, idx = entry_find(class_num, labels) 
+        class_num = (class_num+1) % num_clust
+
+    return idx
+        
+
+
+def entry_find(label, entry_list):
+    found = False
+    idx = -1
+    e_idx = 0
+    while e_idx < len(entry_list) and not found:
+        if entry_list[e_idx] == label:
+            idx = e_idx
+            found = True
+        e_idx += 1
+
+    return found, idx
 
 
 def print_baseline_score(clf, split, test_data, anom_classes):
@@ -707,10 +797,9 @@ def main():
          
 	
              # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd, wprior = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="random", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
+             w, clf_omd, wprior, kmeans = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="cluster_rr", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
 
-         	
-         	
+         		
              '''
              # Logistic regression test
              X_val = val_latent_df.drop(columns=['label'])
@@ -788,7 +877,7 @@ def main():
              #X = data_df.drop(columns=['label'])
          
              # Note that the train_latent_df is used for determining the initial weight vector
-             T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, strategy="random", learning_rate=learning_rates[i])
+             T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, kmeans, strategy="cluster_rr", learning_rate=learning_rates[i])
             
              # Write results to file for further analysis (anomaly isolation, etc.)
              auc_omd_iters_filename = os.path.join(MODEL_DATA_DIRECTORY, 'auc_omd_iters_{}_lr{}.npy'.format(j,i))              
