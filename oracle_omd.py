@@ -213,7 +213,9 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
     #       and compute cluster label vector.
     #
     # Build schedule (either round robin, or random class)
-    kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(data)
+    latent_np = latent_data.drop(columns=['label'])
+    latent_np = latent_np.to_numpy()
+    kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(latent_np)
     # this might need to be copied
     clust_labels = kmeans.labels_.copy() 
 
