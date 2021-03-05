@@ -250,7 +250,7 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
                 #
                 # Need to think about how to transfer relevant information to OMD_Test as well
                 print(i)
-                #if i == 9019:
+                # if i == 9919:
                 #    import pdb; pdb.set_trace()
                 idx = round_robin_pick(clust_labels, i, data, num_clust)
                 assert(idx != -1)
@@ -286,7 +286,7 @@ def round_robin_pick(labels, omd_idx, data, num_clust):
     #    l_idx += 1
 
     idx_found, idx = entry_find(class_num, labels)
-    class_num += 1
+    class_num = (class_num + 1) % num_clust
     # If no instances of nominal class remain (shouldn't happen... just being safe)
     while not idx_found and class_num != nom_class_num:
         idx_found, idx = entry_find(class_num, labels) 
