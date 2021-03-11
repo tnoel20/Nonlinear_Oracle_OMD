@@ -820,12 +820,15 @@ def cluster_test(train_latent_data, latent_data, classes, split, strategy="max",
             with open(cluster_exp_file, 'a+') as f:
                 f.write('With {} clusters, nmi is {}'.format(k, quality))
     
-    plt.figure(split)
+    # plt.figure(split)
     plt.plot(var_retained, nmi_vals)
     plt.title('Clustering Quality v. PCA Variance Retained, k=10, split {}'.format(split))
     plt.xlabel('Variance')
     plt.ylabel('NMI')
-    plt.savefig('nmi_k_10_split_{}.png'.format(split))
+    
+    if split == 4:
+        plt.legend(["Sp. 0", "Sp. 1", "Sp. 2", "Sp. 3", "Sp. 4"], loc="best")
+        plt.savefig('nmi_k_10.png'.format(split))
 
 
 def get_nom_labels(labels, classes):

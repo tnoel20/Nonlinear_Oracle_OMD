@@ -620,4 +620,64 @@ With variance 0.85, num. components is 5With 10 clusters, nmi is 0.3399187880955
 With variance 0.9, num. components is 6With 10 clusters, nmi is 0.3766585790940354
 With variance 0.95, num. components is 7With 10 clusters, nmi is 0.37570079548040447
 With variance 0.98, num. components is 10With 10 clusters, nmi is 0.37641877664242573
+With variance 0.99, num. components is 14With 10 clusters, nmi is 0.376369284339262~~~~ EXPERIMENT BEGIN ~~~~
+With variance 0.5, num. components is 2With 10 clusters, nmi is 0.2773469825819041
+With variance 0.55, num. components is 3With 10 clusters, nmi is 0.28887537124253876
+With variance 0.6, num. components is 3With 10 clusters, nmi is 0.28887537124253876
+With variance 0.65, num. components is 3With 10 clusters, nmi is 0.28887537124253876
+With variance 0.7, num. components is 4With 10 clusters, nmi is 0.3157606024516969
+With variance 0.75, num. components is 4With 10 clusters, nmi is 0.3157606024516969
+With variance 0.8, num. components is 5With 10 clusters, nmi is 0.3350309016185123
+With variance 0.85, num. components is 5With 10 clusters, nmi is 0.3350309016185123
+With variance 0.9, num. components is 6With 10 clusters, nmi is 0.34527239198013204
+With variance 0.95, num. components is 7With 10 clusters, nmi is 0.34685966280072683
+With variance 0.98, num. components is 10With 10 clusters, nmi is 0.3449085054794293
+With variance 0.99, num. components is 14With 10 clusters, nmi is 0.34532951822761404~~~~ EXPERIMENT BEGIN ~~~~
+With variance 0.5, num. components is 3With 10 clusters, nmi is 0.2987041088778002
+With variance 0.55, num. components is 3With 10 clusters, nmi is 0.2987041088778002
+With variance 0.6, num. components is 4With 10 clusters, nmi is 0.30017644782678804
+With variance 0.65, num. components is 4With 10 clusters, nmi is 0.30017644782678804
+With variance 0.7, num. components is 4With 10 clusters, nmi is 0.30017644782678804
+With variance 0.75, num. components is 5With 10 clusters, nmi is 0.3401212578188887
+With variance 0.8, num. components is 5With 10 clusters, nmi is 0.3401212578188887
+With variance 0.85, num. components is 6With 10 clusters, nmi is 0.35128609371208697
+With variance 0.9, num. components is 6With 10 clusters, nmi is 0.35128609371208697
+With variance 0.95, num. components is 8With 10 clusters, nmi is 0.3525062554312255
+With variance 0.98, num. components is 12With 10 clusters, nmi is 0.34853529190037313
+With variance 0.99, num. components is 15With 10 clusters, nmi is 0.3491357867042164~~~~ EXPERIMENT BEGIN ~~~~
+With variance 0.5, num. components is 3With 10 clusters, nmi is 0.32605768694179826
+With variance 0.55, num. components is 3With 10 clusters, nmi is 0.32605768694179826
+With variance 0.6, num. components is 3With 10 clusters, nmi is 0.32605768694179826
+With variance 0.65, num. components is 4With 10 clusters, nmi is 0.3656598318623087
+With variance 0.7, num. components is 4With 10 clusters, nmi is 0.3656598318623087
+With variance 0.75, num. components is 5With 10 clusters, nmi is 0.38125391846921686
+With variance 0.8, num. components is 5With 10 clusters, nmi is 0.38125391846921686
+With variance 0.85, num. components is 6With 10 clusters, nmi is 0.3980566830664582
+With variance 0.9, num. components is 6With 10 clusters, nmi is 0.3980566830664582
+With variance 0.95, num. components is 8With 10 clusters, nmi is 0.3970411000705538
+With variance 0.98, num. components is 13With 10 clusters, nmi is 0.3992302982163146
+With variance 0.99, num. components is 17With 10 clusters, nmi is 0.3987269645774553~~~~ EXPERIMENT BEGIN ~~~~
+With variance 0.5, num. components is 3With 10 clusters, nmi is 0.27687285646473236
+With variance 0.55, num. components is 3With 10 clusters, nmi is 0.27687285646473236
+With variance 0.6, num. components is 3With 10 clusters, nmi is 0.27687285646473236
+With variance 0.65, num. components is 4With 10 clusters, nmi is 0.31570739154008587
+With variance 0.7, num. components is 4With 10 clusters, nmi is 0.31570739154008587
+With variance 0.75, num. components is 4With 10 clusters, nmi is 0.31570739154008587
+With variance 0.8, num. components is 5With 10 clusters, nmi is 0.3368380136859222
+With variance 0.85, num. components is 5With 10 clusters, nmi is 0.3368380136859222
+With variance 0.9, num. components is 6With 10 clusters, nmi is 0.3500903380772373
+With variance 0.95, num. components is 7With 10 clusters, nmi is 0.3513840366027071
+With variance 0.98, num. components is 10With 10 clusters, nmi is 0.35024961695774065
+With variance 0.99, num. components is 15With 10 clusters, nmi is 0.35017161246347195~~~~ EXPERIMENT BEGIN ~~~~
+With variance 0.5, num. components is 3With 10 clusters, nmi is 0.28792037710330637
+With variance 0.55, num. components is 3With 10 clusters, nmi is 0.28792037710330637
+With variance 0.6, num. components is 3With 10 clusters, nmi is 0.28792037710330637
+With variance 0.65, num. components is 4With 10 clusters, nmi is 0.30804527997046316
+With variance 0.7, num. components is 4With 10 clusters, nmi is 0.30804527997046316
+With variance 0.75, num. components is 4With 10 clusters, nmi is 0.30804527997046316
+With variance 0.8, num. components is 5With 10 clusters, nmi is 0.33991878809554515
+With variance 0.85, num. components is 5With 10 clusters, nmi is 0.33991878809554515
+With variance 0.9, num. components is 6With 10 clusters, nmi is 0.3766585790940354
+With variance 0.95, num. components is 7With 10 clusters, nmi is 0.37570079548040447
+With variance 0.98, num. components is 10With 10 clusters, nmi is 0.37641877664242573
 With variance 0.99, num. components is 14With 10 clusters, nmi is 0.376369284339262
