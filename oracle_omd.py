@@ -795,7 +795,7 @@ def cluster_test(train_latent_data, latent_data, classes, split, strategy="max",
     latent_np = latent_data.drop(columns=['label'])
     latent_np = latent_np.to_numpy()
 
-    var_retained = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.98, 0.99] 
+    var_retained = np.linspace(0.5,0.99,num=100) #[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.98, 0.99] 
     k_vals = [10] #[i for i in np.arange(min_clust, max_clust+1)]
 
     nmi_vals = []
@@ -820,7 +820,7 @@ def cluster_test(train_latent_data, latent_data, classes, split, strategy="max",
                 f.write('With {} clusters, nmi is {}'.format(k, quality))
     
     plt.plot(var_retained, nmi_vals)
-    plt.title('Clustering Quality v. PCA Variance Retained')
+    plt.title('Clustering Quality v. PCA Variance Retained, k=10')
     plt.xlabel('Variance')
     plt.ylabel('NMI')
     plt.savefig('nmi_k_10_split_{}.png'.format(split))
