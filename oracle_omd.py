@@ -10,7 +10,9 @@ from sklearn.linear_model import LogisticRegression
 from pyod.models.loda import LODA
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics.cluster import normalized_mutual_info_score as nmi_score
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from oc_data_load import CIFAR10_Data
 #from vanilla_ae import get_vanilla_ae
 from classifier import get_resnet_18_classifier
@@ -73,6 +75,99 @@ def load_data(split=0, normalize=False):
 
     return (kn_train, kn_val, kn_test, unkn_train, unkn_val, unkn_test)
 
+
+def iforest_eval(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, kmeans, strategy="max", learning_rate=1e-2):
+    # TODO:
+    '''
+    Training a linear anomaly detector
+
+    Originally developed to train a linear anomaly
+    detector on latent representations of labeled images
+
+    Parameters
+    ----------
+    data: data instances packed into a dataframe
+
+    anom_classes: a list of classes corresponding
+                  to anomaly classification (should
+                  be a list of unique strings)
+    '''
+    N = len(latent_data)
+    T = N
+    num_clust = 10
+    epochs = 1
+    labels = latent_data['label'].copy()
+    labels = labels.to_numpy().reshape((len(labels),1))
+    #theta, clf = get_weight_prior(train_latent_data)
+    #theta = np.reshape(theta, (len(theta), 1))
+    theta = weight_prior.copy()    
+
+    loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(split)) 
+ 
+    if os.path.isfile(loda_tx_val_filename):
+        with open(loda_tx_val_filename, 'rb') as f:
+            data_orig = np.load(f)
+    else:
+        data_orig = loda_transform(clf_omd, latent_data)
+        np.save(loda_tx_val_filename, data_orig) 
+
+    data = data_orig.copy()
+
+    ###
+    # kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(data)
+    clust_labels = kmeans.labels_.copy()
+
+    aucs = []    
+    iter_labels = []   
+ 
+    aucs_anom = []
+    anom_iters = []
+
+    for k in range(epochs):
+        for i in range(T):
+            w = get_nearest_w(theta)
+            if strategy == "max":
+                # d_anom is data[idx] reshaped to (len(data[idx]),1)
+                d_anom, idx = get_max_anomaly_score(w, data)
+            elif strategy == "random":
+                # assign d_anom, idx appropriately
+                idx = np.random.randint(len(data))
+                d_anom = data[idx].reshape((len(data[idx]),1))
+                assert(idx < len(data) and idx >= 0)
+            elif strategy == "cluster_rr":
+                idx = round_robin_pick(clust_labels, i, data, num_clust)
+                assert(idx != -1)
+                d_anom = data[idx].reshape((len(data[idx]),1))
+ 
+            y = get_feedback(labels[idx,0], anom_classes)
+         
+            # Associating nom/anom labels with each iteration
+            iter_labels.append(y)
+     
+            clust_labels = np.delete(clust_labels, idx, axis=0)
+            data   = np.delete(data, idx, axis=0)
+            labels = np.delete(labels, idx, axis=0)
+            theta = theta + learning_rate*y*d_anom
+            
+            # See how the AUC is doing over all iterations
+            scores, y_actual = test_results(loda_tx_test, w, test_classes, anom_classes)
+            auc = roc_auc_score(y_actual, scores)
+            aucs.append(auc)
+
+            # If current example is anomalous, then add it to auc anomaly curve
+            if y == 1:
+                anom_iters.append(k*T+i)
+                aucs_anom.append(auc)
+
+        # Reset data and labels to run over all data again
+        labels = latent_data['label'].copy()
+        labels = labels.to_numpy().reshape((len(labels),1))
+        data = data_orig.copy()
+        clust_labels = kmeans.labels_.copy()
+            
+
+    print("AUC OMD Done")
+    return np.array([i for i in range(epochs*T)]), np.array(aucs), np.array(anom_iters), np.array(aucs_anom), np.array(iter_labels) 
 
 def omd_test(train_latent_data, latent_data, anom_classes, split, loda_tx_test, test_classes, weight_prior, kmeans, strategy="max", learning_rate=1e-2):
     '''
@@ -215,6 +310,10 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
     # Build schedule (either round robin, or random class)
     latent_np = latent_data.drop(columns=['label'])
     latent_np = latent_np.to_numpy()
+
+    # Experimental PCA
+    
+
     kmeans = KMeans(n_clusters=num_clust, random_state=0).fit(latent_np)
     # this might need to be copied
     clust_labels = kmeans.labels_.copy() 
@@ -271,7 +370,6 @@ def omd(train_latent_data, latent_data, anom_classes, split, strategy="max", tes
  
     print("OMD Done")
     return w, clf, wprior, kmeans
-
 
 
 def round_robin_pick(labels, omd_idx, data, num_clust):
@@ -642,6 +740,104 @@ def construct_latent_set(model, kn_dataset, unkn_dataset=None):
     return val_latent_rep_df
 
 
+def cluster_test(train_latent_data, latent_data, classes, split, strategy="max", test_latent_data=None, learning_rate=1e-2):
+    '''
+    Training a linear anomaly detector
+
+    Originally developed to train a linear anomaly
+    detector on latent representations of labeled images
+
+    Parameters
+    ----------
+    data: data instances packed into a dataframe
+
+    anom_classes: a list of classes corresponding
+                  to anomaly classification (should
+                  be a list of unique strings)
+    '''
+    N = len(latent_data)
+    #epochs = 1
+    #T = N
+    #num_clust = 10
+    min_clust = 6
+    max_clust = 25
+    labels = latent_data['label'].copy()
+    labels = labels.to_numpy().reshape((len(labels),1))
+    wprior, clf = get_weight_prior(train_latent_data)
+
+    # Print out classifier's AUC score
+    #if test_latent_data is not None:
+    #    print_baseline_score(clf, split, test_latent_data, anom_classes)
+
+    wprior = np.reshape(wprior, (len(wprior), 1))
+    theta = wprior.copy()
+    theta = np.reshape(theta, (len(theta), 1))
+    
+    loda_tx_val_filename = os.path.join(MODEL_DATA_DIRECTORY, 'val_loda_tx_latent_{}.npy'.format(split)) 
+    cluster_exp_file = 'cluster_results.txt' 
+
+    if os.path.isfile(loda_tx_val_filename):
+        with open(loda_tx_val_filename, 'rb') as f:
+            data_orig = np.load(f)
+    else:
+        data_orig = loda_transform(clf, latent_data)
+        np.save(loda_tx_val_filename, data_orig) 
+
+    data = data_orig.copy()
+
+    with open(cluster_exp_file, 'a+') as f:
+        f.write('~~~~ EXPERIMENT BEGIN ~~~~')
+
+    # TODO: if strategy is round robin, train k-means model
+    #       and compute cluster label vector.
+    #
+    # Build schedule (either round robin, or random class)
+    latent_np = latent_data.drop(columns=['label'])
+    latent_np = latent_np.to_numpy()
+
+    var_retained = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.98, 0.99] 
+    k_vals = [10] #[i for i in np.arange(min_clust, max_clust+1)]
+
+    nmi_vals = []
+
+    # This only works when k=10; this is of type ndarray
+    nom_labels = get_nom_labels(labels, classes)
+
+    for var in var_retained:
+        pca = PCA(n_components=var, svd_solver='full')
+        z_reduced = pca.fit_transform(latent_np.copy())
+        with open(cluster_exp_file, 'a+') as f:
+            f.write('\nWith variance {}, num. components is {}'.format(var, len(z_reduced[0]))) 
+        for k in k_vals:
+            kmeans = KMeans(n_clusters=k, random_state=0).fit(z_reduced)
+            # this might need to be copied
+            clust_labels = kmeans.labels_.copy() 
+            quality = nmi_score(nom_labels, clust_labels)
+            # NOTE: Need to be cognizant that this is being used to generate
+            # a plot in the case where there is only one k value, 10
+            nmi_vals.append(quality)
+            with open(cluster_exp_file, 'a+') as f:
+                f.write('With {} clusters, nmi is {}'.format(k, quality))
+    
+    plt.plot(var_retained, nmi_vals)
+    plt.title('Clustering Quality v. PCA Variance Retained')
+    plt.xlabel('Variance')
+    plt.ylabel('NMI')
+    plt.savefig('nmi_k_10_split_{}.png'.format(split))
+
+
+def get_nom_labels(labels, classes):
+    nom_labels = []
+    label_nums = dict.fromkeys(classes)
+    for i, class_label in enumerate(classes):
+        label_nums[class_label] = i
+
+    for label in labels:
+        nom_labels.append(label_nums[label[0]])                
+
+    return np.array(nom_labels)
+
+
 def test_results(test_data, weights, y_class, anom_classes):
     '''
     Tests the linear anomaly detector on the test
@@ -797,9 +993,11 @@ def main():
                  test_latent_df = construct_latent_set(kn_classifier, kn_test, unkn_test)
                  test_latent_df.to_csv(Z_test_filename, index=False)
          
-	
+             # Testing out the clusters
+             cluster_test(train_latent_df, val_latent_df, CIFAR_CLASSES, j, strategy="cluster_rr", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
+
              # Note that the train_latent_df is used for determining the initial weight vector
-             w, clf_omd, wprior, kmeans = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="cluster_rr", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
+             ### w, clf_omd, wprior, kmeans = omd(train_latent_df, val_latent_df, anom_classes, j, strategy="cluster_rr", test_latent_data=test_latent_df, learning_rate=learning_rates[i])
 
          		
              '''
@@ -877,7 +1075,9 @@ def main():
              '''
  
              #X = data_df.drop(columns=['label'])
-         
+             ### BLOCK COMMENT BELOW NEEDS TO BE UNCOMMENTED FOR OMD!!!
+
+             '''
              # Note that the train_latent_df is used for determining the initial weight vector
              T_vec, auc_vec, anom_iters, anom_auc, oracle_labels = omd_test(train_latent_df, val_latent_df, anom_classes, j, kn_unkn_test_loda_tx, test_target, wprior, kmeans, strategy="cluster_rr", learning_rate=learning_rates[i])
             
@@ -909,7 +1109,7 @@ def main():
              print(y_actual)
              print('AUROC_{}_lr{}_sd{}: {}\n'.format(j, i, SEED, roc_auc_score(y_actual, scores)), file=open("results.txt", "a+"))
              #plot_save_auroc(y_actual, scores, j, learning_rates, i)
-    
+             '''
     # NEXT: Run on all 5 anomaly splits.
     
     # Use latent space to train classifier AND as input to scoring function for
